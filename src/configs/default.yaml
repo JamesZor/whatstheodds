@@ -1,4 +1,3 @@
 betfair_client:
-  - test: "hello world"
-  - env_file: ""
-  - required_credentials: ["USER_NAME", "PASSWORD", "API_KEY"]
+  env_file: ".env"
+  required_credentials: ["USER_NAME", "PASSWORD", "APP_KEY"]
