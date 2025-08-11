@@ -1,0 +1,80 @@
+import logging
+from pathlib import Path
+from typing import Optional
+
+import betfairlightweight
+from dotenv import dotenv_values
+from omegaconf import DictConfig, OmegaConf
+
+logger = logging.getLogger(__name__)
+
+
+##############################
+# Utils
+##############################
+
+
+def _load_config(
+    config_dir: str = "configs", config_file: str = "default.yaml"
+) -> Optional[DictConfig]:
+    file: Path = Path(__file__).parent.parent / config_dir / config_file
+    if file.is_file():
+        logger.info(f"Config file found {file =}.")
+        return OmegaConf.load(file)  # type: ignore[return-value]
+    logger.error(f"No config path found: {file = }.")
+
+
+
+# set config
+CONFIG: DictConfig = _load_config()  # type: ignore[assignment]
+DIR: Path = Path(__file__).parent.parent
+
+def _valid_betfair_api_config(self, api_config: Dict[str, str | None]) -> None:
+    """
+    Validates required credentials are present and non-empty
+
+    Args (dict): api_config
+    """
+
+    # Check for missing credentials
+    missing_credentials: List[str] = [
+        cred for cred in CONFIG.betfair_client.required_credentials if cred not in api_config
+    ]
+
+    if missing_credentials:
+        missing_credentials_msg: str = (
+            f"Missing required credentials in env :{', '.join(missing_credentials)}"
+        )
+        logger.error(missing_credentials_msg)
+        raise ValueError(missing_credentials_msg)
+
+    # check for empty credentials
+    empty_credentials: List[str] = [
+        cred
+        for cred in CONFIG.betfair_client.required_credentials
+        if not api_config.get(cred, "").strip()
+    ]
+    if empty_credentials:
+        empty_credentials_msg: str = (
+            f"Credentials cannot be empty: {', '.join(empty_credentials)}"
+        )
+        logger.error(empty_credentials_msg)
+        raise ValueError(empty_credentials_msg)
+
+##############################
+#
+##############################
+
+def get_env_creds(
+    env_file_name: str = CONFIG.betfair_client.env_file,
+) -> Dict[str, str, str]:
+
+    env_file = DIR / env_file_name
+
+    if not env_file.is_file():
+        logger.error(f"Could not find .env file: {env_file =}.")
+        raise FileExistsError("Env file can not be found.")
+    
+    try:
+        client_details: Dict[str, str] = dotenv_values(env_file)
+        
