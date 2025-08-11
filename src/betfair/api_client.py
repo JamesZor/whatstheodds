@@ -1,10 +1,12 @@
 import logging
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 import betfairlightweight  # type: ignore
 from dotenv import dotenv_values
-from omegaconf import DictConfig, OmegaConf
+from omegaconf import DictConfig
+
+from src.utils import load_config
 
 logger = logging.getLogger(__name__)
 
@@ -14,18 +16,8 @@ logger = logging.getLogger(__name__)
 ##############################
 
 
-def _load_config(
-    config_dir: str = "configs", config_file: str = "default.yaml"
-) -> Optional[DictConfig]:
-    file: Path = Path(__file__).parent.parent / config_dir / config_file
-    if file.is_file():
-        logger.info(f"Config file found {file =}.")
-        return OmegaConf.load(file)  # type: ignore[return-value]
-    logger.error(f"No config path found: {file = }.")
-
-
 # set config
-CONFIG: DictConfig = _load_config()  # type: ignore[assignment]
+CONFIG: DictConfig = load_config()  # type: ignore[assignment]
 DIR: Path = Path(__file__).parent.parent
 
 
