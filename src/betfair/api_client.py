@@ -1,8 +1,8 @@
 import logging
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 
-import betfairlightweight
+import betfairlightweight  # type: ignore
 from dotenv import dotenv_values
 from omegaconf import DictConfig, OmegaConf
 
@@ -54,7 +54,7 @@ def _valid_betfair_api_config(api_config: Dict[str, str | None]) -> None:
     empty_credentials: List[str] = [
         cred
         for cred in CONFIG.betfair_client.required_credentials
-        if not api_config.get(cred, "").strip()
+        if not api_config.get(cred, "").strip()  # type: ignore[union-attr]
     ]
     if empty_credentials:
         empty_credentials_msg: str = (
