@@ -28,3 +28,5 @@ def test_basic_setup():
     results = bse.search_match(test_search)
 
     print(results)
+    print(len(results))
+    print(len(bse.cfg.betfair_football.markets))
