@@ -128,11 +128,4 @@ class BetfairSearchEngine:
                         )
                         # Keep the original failed result
 
-        return BetfairSearchResult.from_results_list(search_results)
-
-    # def bulk_search(self, params_list: List[BetfairSearchParams]) -> List[SearchResult]:
-    #     """
-    #     Efficiently search for multiple matches
-    #     Uses caching and rate limiting
-    #     """
-    #     pass
+        return BetfairSearchResult.from_results_list(search_results)  # type: ignore[no-any-return]
