@@ -44,3 +44,18 @@ betfair_football:
       "MATCH_ODDS",
       "BOTH_TEAMS_TO_SCORE",
             ]
+
+
+processing: # Extractor
+  clean_data: true
+  pre_kickoff_mins: 10      # Data from 10 mins before kickoff
+  post_kickoff_mins: 100     # Data up to 100 mins after kickoff  
+  resample_to_mins: true     # Resample to 1-minute intervals
+  clip_extreme_odds: true    # Remove unrealistic odds
+  min_odds: 1.01
+  max_odds: 1000
+  implied_odds: true   # in _calcualte_derived_feature 
+  odds_movements: false # in _calcualte_derived_feature 
+
+
+
