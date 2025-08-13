@@ -4,13 +4,20 @@ betfair_client:
 
 
 search:
-  active_strategies: ["ExactDateTeamSearch"]
-
+  primary_strategy: "ExactDateTeamSearch"
+  extended_strategy:  null
 
   exact_date_team_search:
     day: 1
     minute: 0
     hour: 0
+
+  extended_strategy_conf:
+    day: 31
+    minute: 0
+    hour: 0
+
+
 
 betfair_football:
   sport: "Soccer"
@@ -24,7 +31,7 @@ betfair_football:
       "HALF_TIME_SCORE",
       "HALF_TIME",
     # Full-time markets
-      "OVER_UNDER",
+#      "OVER_UNDER",
       "OVER_UNDER_05",
       "OVER_UNDER_15",
       "OVER_UNDER_25",
