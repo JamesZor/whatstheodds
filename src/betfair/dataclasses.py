@@ -1,5 +1,5 @@
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union
 
@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 
 
 ########################################
-# HACK: dataclass
+#  dataclass
 ########################################
 @dataclass
 class BetfairSearchRequest:
@@ -45,8 +45,38 @@ class BetfairSearchSingleMarketResult:
         )
 
 
-# TODO: - class needs the file path ( which is used in the downloader )
 @dataclass
 class BetfairSearchResult:
     match_id: Optional[str] = None
-    markets: Dict[str, BetfairSearchSingleMarketResult] = {}
+    valid_markets: Dict[str, BetfairSearchSingleMarketResult] = field(
+        default_factory=dict
+    )
+    missing_markets: Dict[str, BetfairSearchSingleMarketResult] = field(
+        default_factory=dict
+    )
+
+    @classmethod
+    def from_results_list(cls, results: List[BetfairSearchSingleMarketResult]):
+        # Create markets dict mapping market_type to result
+        valid_markets = {
+            result.market_type: result
+            for result in results
+            if result.match_id is not None
+        }
+
+        missing_markets = {
+            result.market_type: result for result in results if result.match_id is None
+        }
+
+        # Get match_id from first successful result, or None if all failed
+        match_id = None
+        for result in results:
+            if result.match_id is not None:
+                match_id = result.match_id
+                break
+
+        return cls(
+            match_id=match_id,
+            valid_markets=valid_markets,
+            missing_markets=missing_markets,
+        )

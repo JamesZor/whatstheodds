@@ -51,5 +51,10 @@ def test_market_search():
 
     results = bse.search_main(test_search)
 
-    for r in results:
-        print(r)
+    for key, value in results.valid_markets.items():
+        print(value)
+
+    print("=" * 20)
+
+    for key, value in results.missing_markets.items():
+        print(value)

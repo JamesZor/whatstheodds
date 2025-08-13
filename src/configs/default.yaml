@@ -2,6 +2,10 @@ betfair_client:
   env_file: ".env"
   required_credentials: ["USER_NAME", "PASSWORD", "APP_KEY"]
 
+storage:
+  data: "data"
+  temp: "data/temp"
+
 
 search:
   primary_strategy: "ExactDateTeamSearch"
@@ -31,7 +35,6 @@ betfair_football:
       "HALF_TIME_SCORE",
       "HALF_TIME",
     # Full-time markets
-#      "OVER_UNDER",
       "OVER_UNDER_05",
       "OVER_UNDER_15",
       "OVER_UNDER_25",
