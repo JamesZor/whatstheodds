@@ -6,6 +6,13 @@ storage:
   data: "data"
   temp: "data/temp"
 
+mapping:
+  mapping_dir: "mappings"
+  active_files: ["scotland.json"]
+  tournament_country_map:
+    "1": "GB"   # English Premier League
+    "54": "GB"  # Scottish Premiership
+    "55": "GB"  # Scottish Championship
 
 search:
   primary_strategy: "ExactDateTeamSearch"
@@ -54,7 +61,7 @@ processing: # Extractor
   clip_extreme_odds: true    # Remove unrealistic odds
   min_odds: 1.01
   max_odds: 1000
-  implied_odds: true   # in _calcualte_derived_feature 
+  implied_odds: false   # in _calcualte_derived_feature 
   odds_movements: false # in _calcualte_derived_feature 
 
 

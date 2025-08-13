@@ -54,7 +54,19 @@ def test_basic():
     odds_df: pd.DataFrame = result["odds_data"]  # Pandas DataFrame with all odds
     match_info = result["match_info"]  # Dict with team names, kickoff time
 
-    check = ["minutes", "home", "away", "draw", "ht_home", "ht_away", "ht_draw"]
+    print(json.dumps(match_info, indent=6))
+    print("-" * 20)
+
+    check = [
+        "minutes",
+        "timestamp",
+        "home",
+        "away",
+        "draw",
+        "ht_home",
+        "ht_away",
+        "ht_draw",
+    ]
     check2 = [
         "minutes",
         "home_prob",
@@ -71,5 +83,5 @@ def test_basic():
     print()
     print("-" * 20)
 
-    print(odds_df[check2].head(20))
+    # print(odds_df[check2].head(20))
     print(odds_df.columns)
