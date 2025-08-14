@@ -21,6 +21,11 @@ from .processor_factory import ProcessorFactory
 logger = logging.getLogger(__name__)
 
 
+# HACK:
+# 1 - Change config to cfg as cfg is used more commonly.
+# 2 - Update some of the classes init methods
+
+
 class MatchExtractor:
     """Extract and process odds data from Betfair match files"""
 
@@ -32,13 +37,13 @@ class MatchExtractor:
             config: OmegaConf configuration object
         """
         self.config: DictConfig = load_config() if config is None else config  # type: ignore[assignment]
-        self.temp_dir = Path(config.storage.temp)
-        self.processor_factory = ProcessorFactory(config)
-        self.odds_processor = OddsDataProcessor(config)
+        self.temp_dir = Path(self.config.storage.temp)
+        self.processor_factory = ProcessorFactory(self.config)
+        self.odds_processor = OddsDataProcessor(self.config)
         self.file_cache: Dict = {}
 
         # Get market types from config
-        self.target_markets = config.betfair_football.markets
+        self.target_markets = self.config.betfair_football.markets
 
     def extract_match(self, match_id: str) -> Optional[Dict[str, Any]]:
         """
