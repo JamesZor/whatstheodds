@@ -80,3 +80,24 @@ class BetfairSearchResult:
             valid_markets=valid_markets,
             missing_markets=missing_markets,
         )
+
+
+@dataclass
+class BetfairSearchResultMultiDate:
+    to_date: Optional[datetime] = None
+    from_date: Optional[datetime] = None
+    events: Dict[str, BetfairSearchSingleMarketResult] = field(default_factory=dict)
+
+    @classmethod
+    def from_results_list(
+        cls,
+        results: List[BetfairSearchSingleMarketResult],
+        to_date: datetime,
+        from_date: datetime,
+    ):
+        # Create markets dict mapping market_type to result
+        events = {
+            result.match_id: result for result in results if result.match_id is not None
+        }
+
+        return cls(to_date=to_date, from_date=from_date, events=events)

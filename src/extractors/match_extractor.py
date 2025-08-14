@@ -13,6 +13,8 @@ from typing import Any, Dict, List, Optional
 import pandas as pd
 from omegaconf import DictConfig
 
+from src.utils import load_config
+
 from .odds_processor import OddsDataProcessor
 from .processor_factory import ProcessorFactory
 
@@ -22,14 +24,14 @@ logger = logging.getLogger(__name__)
 class MatchExtractor:
     """Extract and process odds data from Betfair match files"""
 
-    def __init__(self, config: DictConfig):
+    def __init__(self, config: Optional[DictConfig] = None):
         """
         Initialize with configuration
 
         Args:
             config: OmegaConf configuration object
         """
-        self.config = config
+        self.config: DictConfig = load_config() if config is None else config  # type: ignore[assignment]
         self.temp_dir = Path(config.storage.temp)
         self.processor_factory = ProcessorFactory(config)
         self.odds_processor = OddsDataProcessor(config)
