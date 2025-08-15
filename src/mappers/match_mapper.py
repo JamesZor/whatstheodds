@@ -289,6 +289,7 @@ class MatchMapper:
             country_code=country_code,
         )
 
+    # HACK: - add attr to init
     def _get_country_from_tournament(self, tournament_id: int) -> str:
         """
         Map tournament ID to country code
@@ -300,7 +301,7 @@ class MatchMapper:
             Country code string
         """
         # You could load this from config or a separate mapping file
-        tournament_country_map = getattr(self.cfg, "tournament_country_map", {})
+        tournament_country_map = getattr(self.cfg.mapping, "tournament_country_map", {})
         # Try config first, then default, then fallback to GB
         country = tournament_country_map.get(str(tournament_id))
         logger.debug(f"Mapped tournament {tournament_id} to country {country}")

@@ -23,6 +23,7 @@ search:
     minute: 0
     hour: 0
 
+  # TODO: Missing some searches 
   extended_strategy_conf:
     day: 31
     minute: 0
@@ -39,24 +40,24 @@ betfair_football:
       "FIRST_HALF_GOALS_05",
       "FIRST_HALF_GOALS_15",
       "FIRST_HALF_GOALS_25",
-      "HALF_TIME_SCORE",
+      # "HALF_TIME_SCORE",
       "HALF_TIME",
     # Full-time markets
       "OVER_UNDER_05",
       "OVER_UNDER_15",
       "OVER_UNDER_25",
       "OVER_UNDER_35",
-      "CORRECT_SCORE",
+      # "CORRECT_SCORE", # TODO:
             #   "CORRECT_SCORE2",
       "MATCH_ODDS",
-      "BOTH_TEAMS_TO_SCORE",
+      # "BOTH_TEAMS_TO_SCORE",
             ]
 
 
 processing: # Extractor
   clean_data: true
   pre_kickoff_mins: 10      # Data from 10 mins before kickoff
-  post_kickoff_mins: 100     # Data up to 100 mins after kickoff  
+  post_kickoff_mins: 120     # Data up to 100 mins after kickoff  
   resample_to_mins: true     # Resample to 1-minute intervals
   clip_extreme_odds: true    # Remove unrealistic odds
   min_odds: 1.01
