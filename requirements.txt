@@ -1,0 +1,20 @@
+# Core data processing
+pandas>=1.3.0,<3.0.0
+numpy>=1.20.0,<2.0.0
+
+# Configuration management
+omegaconf>=2.1.0,<3.0.0
+
+# Environment variables
+python-dotenv>=0.19.0,<2.0.0
+
+# Betfair API client
+betfairlightweight>=2.13.0,<3.0.0
+
+# Progress bars
+tqdm>=4.60.0,<5.0.0
+
+# Optional: If you plan to save data in different formats
+# Uncomment the ones you need:
+# pyarrow>=5.0.0,<15.0.0  # For parquet support in pandas
+# openpyxl>=3.0.0,<4.0.0  # For Excel file support in pandas
