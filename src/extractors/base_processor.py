@@ -7,15 +7,20 @@ import logging
 from abc import ABC, abstractmethod
 from typing import Dict, List, Optional, Set, Tuple
 
+from omegaconf import DictConfig
+
+from src.utils import load_config
+
 logger = logging.getLogger(__name__)
 
 
 class BaseMarketProcessor(ABC):
     """Base abstract class for processing different types of market odds"""
 
-    def __init__(self, market_type: str, config: Optional[Dict] = None):
+    def __init__(self, market_type: str, cfg: Optional[DictConfig] = None):
         self.market_type = market_type
-        self.config = config or {}
+
+        self.cfg: DictConfig = load_config() if cfg is None else cfg  # type: ignore[assignment]
 
     @abstractmethod
     def process(self, data: List[Dict]) -> Dict[str, List]:

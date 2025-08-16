@@ -5,13 +5,17 @@ Processor for Match Odds markets (1X2)
 
 from typing import Dict, List, Optional, Set
 
+from omegaconf import DictConfig
+
+from src.utils import load_config
+
 from ..base_processor import BaseMarketProcessor
 
 
 class MatchOddsProcessor(BaseMarketProcessor):
     """Processor for Match Odds markets (Home/Away/Draw)"""
 
-    def __init__(self, config: Optional[Dict] = None):
+    def __init__(self, config: Optional[DictConfig] = None):
         super().__init__("MATCH_ODDS", config)
 
     def get_output_columns(self) -> List[str]:

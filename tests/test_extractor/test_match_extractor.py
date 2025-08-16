@@ -1,6 +1,7 @@
 import json
 import logging
 from datetime import datetime
+from pathlib import Path
 
 import pandas as pd
 import pytest
@@ -10,6 +11,7 @@ from extractors import MatchExtractor
 from src.betfair.dataclasses import BetfairSearchRequest
 from src.betfair.downloader import BetfairDownloader, BetfairDownloadError
 from src.betfair.search_engine import BetfairSearchEngine
+from src.pipeline.pipeline_coordinator import PipelineCoordinator
 from src.utils import load_config
 
 """
@@ -38,6 +40,7 @@ Index(['minutes', 'timestamp', 'over_0_5', 'under_0_5', 'over_3_5',
 """
 
 
+@pytest.mark.skip("working on score odds")
 def test_basic():
     # Load your config
     config = load_config()
@@ -85,3 +88,34 @@ def test_basic():
 
     # print(odds_df[check2].head(20))
     print(odds_df.columns)
+
+
+def test_score_odd_extractions():
+    match_file_path = Path(
+        "/home/james/bet_project/football/scot_test_mixed/football_data_mixed_matches.csv"
+    )
+    df = pd.read_csv(match_file_path)
+    # Convert date column once
+    df["match_date"] = pd.to_datetime(df["match_date"])
+
+    row = df.iloc[69]
+
+    print(row)
+    pipeline = PipelineCoordinator()
+    # pipe line config
+    date_column: str = "match_date"
+    match_id_column: str = "match_id"
+    home_column: str = "home_team_slug"
+    away_column: str = "away_team_slug"
+    tournament_column: str = "tournament_id"
+
+    search_request = pipeline._map_match_from_row(
+        row=row,
+        date_column=date_column,
+        match_id_column=match_id_column,
+        home_column=home_column,
+        away_column=away_column,
+        tournament_column=tournament_column,
+    )
+
+    print(search_request)

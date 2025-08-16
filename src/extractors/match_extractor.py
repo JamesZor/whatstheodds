@@ -29,21 +29,21 @@ logger = logging.getLogger(__name__)
 class MatchExtractor:
     """Extract and process odds data from Betfair match files"""
 
-    def __init__(self, config: Optional[DictConfig] = None):
+    def __init__(self, cfg: Optional[DictConfig] = None):
         """
         Initialize with configuration
 
         Args:
             config: OmegaConf configuration object
         """
-        self.config: DictConfig = load_config() if config is None else config  # type: ignore[assignment]
-        self.temp_dir = Path(self.config.storage.temp)
-        self.processor_factory = ProcessorFactory(self.config)
-        self.odds_processor = OddsDataProcessor(self.config)
+        self.cfg: DictConfig = load_config() if cfg is None else cfg  # type: ignore[assignment]
+        self.temp_dir = Path(self.cfg.storage.temp)
+        self.processor_factory = ProcessorFactory(self.cfg)
+        self.odds_processor = OddsDataProcessor(self.cfg)
         self.file_cache: Dict = {}
 
         # Get market types from config
-        self.target_markets = self.config.betfair_football.markets
+        self.target_markets = self.cfg.betfair_football.markets
 
     def extract_match(self, match_id: str) -> Optional[Dict[str, Any]]:
         """
@@ -87,7 +87,7 @@ class MatchExtractor:
             odds_data = self._merge_market_data(processed_markets)
 
             # Clean and prepare data
-            if self.config.get("processing", {}).get("clean_data", True):
+            if self.cfg.get("processing", {}).get("clean_data", True):
                 odds_data = self.odds_processor.clean_odds_data(
                     odds_data, match_info.get("kick_off_time")
                 )
