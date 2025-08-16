@@ -54,7 +54,7 @@ def test_basic():
     result = extractor.extract_match(match_id)
 
     # Access the data
-    odds_df: pd.DataFrame = result["odds_data"]  # Pandas DataFrame with all odds
+    odds_df: pd.dataframe = result["odds_data"]  # pandas dataframe with all odds
     match_info = result["match_info"]  # Dict with team names, kickoff time
 
     print(json.dumps(match_info, indent=6))
@@ -98,10 +98,15 @@ def test_score_odd_extractions():
     # Convert date column once
     df["match_date"] = pd.to_datetime(df["match_date"])
 
-    row = df.iloc[69]
+    row = (
+        df[df["tournament_id"] == 54].sort_values("match_date", ascending=False).iloc[3]
+    )
 
     print(row)
-    pipeline = PipelineCoordinator()
+    cfg = load_config("configs", config_file="test_score_odds.yaml")
+    pipeline = PipelineCoordinator(cfg=cfg)
+    # print(OmegaConf.to_yaml(cfg=cfg))
+
     # pipe line config
     date_column: str = "match_date"
     match_id_column: str = "match_id"
@@ -119,3 +124,13 @@ def test_score_odd_extractions():
     )
 
     print(search_request)
+
+    search_result = pipeline._search_match(search_request)
+    print(search_result)
+    download_files = pipeline._download_match_data(search_result)
+    print(download_files)
+    extracted_data = pipeline._extract_odds_data(search_result.match_id)
+    # print(extracted_data)
+    odds_df = extracted_data["odds_data"]
+
+    print(odds_df.head(20))

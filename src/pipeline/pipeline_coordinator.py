@@ -125,7 +125,7 @@ class PipelineCoordinator:
         )
 
         self.extractor: MatchExtractor = (
-            MatchExtractor(config=self.cfg) if extractor is None else extractor
+            MatchExtractor(cfg=self.cfg) if extractor is None else extractor
         )
 
         # Processing statistics
