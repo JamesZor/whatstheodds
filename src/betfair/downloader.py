@@ -1,3 +1,5 @@
+import bz2
+import json
 import logging
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union
@@ -40,6 +42,10 @@ class BetfairDownloader:
             TempStorage(cfg=self.cfg) if tmp_manager is None else tmp_manager
         )
 
+        # Track authentication state
+        self._auth_attempts = 0
+        self._max_auth_attempts = 3
+
     def _validate_search_result(
         self, search_result: BetfairSearchSingleMarketResult
     ) -> None:
@@ -59,14 +65,121 @@ class BetfairDownloader:
                 f"No market_id in search result for market {search_result.market_type}"
             )
 
+    def _validate_downloaded_file(self, file_path: Path) -> bool:
+        """
+        Validate that the downloaded file is compressed data, not HTML
+
+        Args:
+            file_path: Path to the downloaded file
+
+        Returns:
+            True if valid compressed data, False if HTML or invalid
+        """
+        if not file_path.exists():
+            logger.error(f"File does not exist: {file_path}")
+            return False
+
+        # Check file size - HTML error pages are typically small
+        file_size = file_path.stat().st_size
+        if file_size < 1000:  # Less than 1KB is suspicious
+            logger.warning(
+                f"File size too small ({file_size} bytes), likely an error page"
+            )
+            return False
+
+        try:
+            # Try to read the file as compressed data
+            with bz2.open(file_path, "rt", encoding="utf-8") as f:
+                first_line = f.readline().strip()
+
+                # Check if it's HTML
+                if any(
+                    html_marker in first_line.lower()
+                    for html_marker in ["<!doctype", "<html", "<?xml"]
+                ):
+                    logger.error(f"File contains HTML instead of data: {file_path}")
+
+                    # Log the first few lines for debugging
+                    with open(file_path, "r", encoding="utf-8") as html_file:
+                        html_content = html_file.read(500)
+                        logger.debug(f"HTML content (first 500 chars): {html_content}")
+
+                    return False
+
+                # Try to parse as JSON (Betfair data should be JSON lines)
+                try:
+                    json.loads(first_line)
+                    logger.debug(f"File validated as compressed JSON data: {file_path}")
+                    return True
+                except json.JSONDecodeError:
+                    logger.error(f"File is not valid JSON: {first_line[:100]}")
+                    return False
+
+        except (IOError, UnicodeDecodeError) as e:
+            # File might not be compressed or might be corrupted
+            logger.error(f"Error reading file {file_path}: {str(e)}")
+
+            # Check if it's uncompressed HTML
+            try:
+                with open(file_path, "r", encoding="utf-8") as f:
+                    content = f.read(100)
+                    if any(
+                        marker in content.lower() for marker in ["<!doctype", "<html"]
+                    ):
+                        logger.error("File is uncompressed HTML")
+                        return False
+            except:
+                pass
+
+            return False
+
+    def _reauthenticate(self) -> bool:
+        """
+        Attempt to reauthenticate with Betfair
+
+        Returns:
+            True if successful, False otherwise
+        """
+        if self._auth_attempts >= self._max_auth_attempts:
+            logger.error(
+                f"Max authentication attempts ({self._max_auth_attempts}) reached"
+            )
+            return False
+
+        try:
+            self._auth_attempts += 1
+            logger.info(
+                f"Reauthenticating (attempt {self._auth_attempts}/{self._max_auth_attempts})"
+            )
+
+            # Logout first if there's an existing session
+            if hasattr(self.client, "session_token") and self.client.session_token:
+                try:
+                    self.client.logout()
+                except:
+                    pass  # Ignore logout errors
+
+            # Re-login
+            self.client.login_interactive()
+            logger.info("Successfully reauthenticated")
+
+            # Reset counter on success
+            self._auth_attempts = 0
+            return True
+
+        except Exception as e:
+            logger.error(f"Reauthentication failed: {str(e)}")
+            return False
+
     def _download_single_market(
-        self, search_result: BetfairSearchSingleMarketResult
+        self, search_result: BetfairSearchSingleMarketResult, retry_on_html: bool = True
     ) -> Path:
         """
-        Download a single market file
+        Download a single market file with validation
 
         Args:
             search_result: Search result containing file path and metadata
+            retry_on_html: Whether to retry with reauthentication if HTML is received
 
         Returns:
             Path to the downloaded file
@@ -102,15 +215,38 @@ class BetfairDownloader:
                     "Download failed - no data received from API"
                 )
 
-            # Try to find the downloaded file
+            # Find the downloaded file
             downloaded_file = self._find_downloaded_file(save_folder, search_result)
-            if not downloaded_file.exists():
-                raise BetfairDownloadError(
-                    f"Download completed but file not found: {downloaded_file}"
-                )
+
+            # Validate the downloaded file
+            if not self._validate_downloaded_file(downloaded_file):
+                # Delete the invalid file
+                downloaded_file.unlink(missing_ok=True)
+
+                # If we got HTML, it's likely an auth issue
+                if retry_on_html:
+                    logger.warning(
+                        "Received HTML instead of data, attempting reauthentication"
+                    )
+
+                    if self._reauthenticate():
+                        # Retry the download once after reauthentication
+                        return self._download_single_market(
+                            search_result, retry_on_html=False
+                        )
+                    else:
+                        raise BetfairDownloadError(
+                            f"Download failed for {search_result.market_type}: "
+                            "Received HTML page (likely authentication issue)"
+                        )
+                else:
+                    raise BetfairDownloadError(
+                        f"Download validation failed for {search_result.market_type}: "
+                        "Invalid file format after retry"
+                    )
 
             logger.info(
-                f"Successfully downloaded {search_result.market_type} to {downloaded_file}"
+                f"Successfully downloaded and validated {search_result.market_type} to {downloaded_file}"
             )
             return downloaded_file
 
@@ -119,7 +255,16 @@ class BetfairDownloader:
                 f"Betfair API error downloading {search_result.market_type}: {str(e)}"
             )
             logger.error(error_msg)
+
+            # Check if it's an auth error
+            if "session" in str(e).lower() or "login" in str(e).lower():
+                if retry_on_html and self._reauthenticate():
+                    return self._download_single_market(
+                        search_result, retry_on_html=False
+                    )
+
             raise BetfairDownloadError(error_msg) from e
+
         except Exception as e:
             error_msg = (
                 f"Unexpected error downloading {search_result.market_type}: {str(e)}"
@@ -209,37 +354,6 @@ class BetfairDownloader:
 
         return downloaded_files
 
-    def download_missing_markets(
-        self, match: BetfairSearchResult, retry_search_func: Optional[Callable] = None
-    ) -> Dict[str, Path]:
-        """
-        Attempt to download missing markets using a retry strategy
-
-        Args:
-            match: Search result with missing markets
-            retry_search_func: Optional function to retry search for missing markets
-
-        Returns:
-            Dict of successfully downloaded missing markets
-        """
-        if not match.missing_markets:
-            logger.info("No missing markets to retry")
-            return {}
-
-        downloaded_files: Dict[str, Path] = {}
-
-        if retry_search_func:
-            logger.info(
-                f"Retrying search for {len(match.missing_markets)} missing markets"
-            )
-            # This would need to be implemented based on your retry strategy
-            # For now, just log the missing markets
-
-        for market_type, search_result in match.missing_markets.items():
-            logger.warning(f"Missing market {market_type}: {search_result.error}")
-
-        return downloaded_files
-
     def verify_downloads(self, match: BetfairSearchResult) -> Dict[str, bool]:
         """
         Verify that all expected files were downloaded successfully
@@ -260,8 +374,9 @@ class BetfairDownloader:
         for market_type, search_result in match.valid_markets.items():
             try:
                 expected_file = self._find_downloaded_file(match_folder, search_result)
-                verification_results[market_type] = (
-                    expected_file.exists() and expected_file.stat().st_size > 0
+                # Use our validation method instead of just checking existence
+                verification_results[market_type] = self._validate_downloaded_file(
+                    expected_file
                 )
             except Exception as e:
                 logger.error(f"Error verifying {market_type}: {e}")
@@ -286,6 +401,13 @@ class BetfairDownloader:
         downloaded_count = sum(verification_results.values())
         folder_size = self.tmp_storage.get_temp_folder_size(match.match_id)
 
+        # Check for HTML files (failed downloads)
+        html_files = []
+        if match_folder.exists():
+            for file_path in match_folder.glob("*.bz2"):
+                if not self._validate_downloaded_file(file_path):
+                    html_files.append(file_path.name)
+
         return {
             "match_id": match.match_id,
             "total_expected_files": total_expected,
@@ -297,6 +419,8 @@ class BetfairDownloader:
             "folder_exists": match_folder.exists(),
             "total_folder_size_bytes": folder_size,
             "verification_details": verification_results,
+            "invalid_html_files": html_files,
+            "authentication_attempts": self._auth_attempts,
         }
 
     def cleanup_failed_download(self, match_id: str) -> bool:
@@ -306,3 +430,6 @@ class BetfairDownloader:
         except Exception as e:
             logger.error(f"Failed to cleanup after failed download for {match_id}: {e}")
             return False
+
+
+###
