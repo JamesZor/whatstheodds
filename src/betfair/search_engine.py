@@ -12,7 +12,11 @@ from .dataclasses import (
     BetfairSearchResult,
     BetfairSearchSingleMarketResult,
 )
-from .search_strategies import BaseSearchStrategy, ExactDateTeamSearch
+from .search_strategies import (
+    BaseSearchStrategy,
+    ExactDateTeamSearch,
+    ExtendDateTeamSearch,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -51,6 +55,7 @@ class BetfairSearchEngine:
         """
         search_strategies_mapping: Dict[str, Type[BaseSearchStrategy]] = {
             "ExactDateTeamSearch": ExactDateTeamSearch,
+            "ExtendDateTeamSearch": ExtendDateTeamSearch,
             # TODO: Add more strategies
         }
 

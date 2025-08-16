@@ -16,7 +16,7 @@ mapping:
 
 search:
   primary_strategy: "ExactDateTeamSearch"
-  extended_strategy:  null
+  extended_strategy: "ExtendDateTeamSearch" # null for none
 
   exact_date_team_search:
     day: 1
@@ -25,7 +25,7 @@ search:
 
   # TODO: Missing some searches 
   extended_strategy_conf:
-    day: 31
+    day: 30
     minute: 0
     hour: 0
 
