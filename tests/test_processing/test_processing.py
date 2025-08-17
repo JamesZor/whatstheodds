@@ -11,14 +11,11 @@ from src.mappers.match_mapper import MatchMapper
 from src.processor.dataframe_processor import DataFrameProcessor
 
 match_file_path = Path(
-    "/home/james/bet_project/football/scot_test_mixed/football_data_mixed_matches.csv"
+    "/home/james/bet_project/football_data/scot_nostats/football_data_mixed_matches.csv"
 )
 df = pd.read_csv(match_file_path)
 # Convert date column once
 df["match_date"] = pd.to_datetime(df["match_date"])
-
-df.head(20)
-d1 = df[0:5]
 
 
 @pytest.mark.skip()
@@ -69,6 +66,7 @@ def test_two():
     odds.plot.line(x="minutes", y="over_1_5")
 
 
+
 @pytest.mark.skip()
 def test_three_():
     # Initialize processor
@@ -77,11 +75,10 @@ def test_three_():
     # Process DataFrame and save results
     processed_data, saved_files = processor.process_and_save(
         df=df,
-        run_name="scots",
+        run_name="scots_nostats",
         save_formats=["csv"],
         cleanup_on_success=True,
     )
-
 
 def test_four():
     """
@@ -92,16 +89,55 @@ def test_four():
     Without extended search = 304/304 [01:53<00:00,  2.69match/s, success=0, failed=304, current=1.25e+7]
 
     """
-    join_file_path = "/home/james/bet_project/whatstheodds/output/scots_20250814_185431/join_table.csv"
+    join_file_path = "/home/james/bet_project/whatstheodds/output/scots_nostats_20250816_200817/join_table.csv"
     join_df = pd.read_csv(join_file_path)
     valid_ids = set(join_df.sofa_match_id.unique())
     df1 = df[~df["match_id"].isin(valid_ids)]
     # Initialize processor
+#    print(len(df1))
+#    print(df1)
     processor = DataFrameProcessor()
     # Process DataFrame and save results
     processed_data, saved_files = processor.process_and_save(
         df=df1,
-        run_name="scots_1",
+        run_name="scots_2",
         save_formats=["csv"],
         cleanup_on_success=True,
     )
+
+
+
+
+@pytest.mark.skip()
+def test_five():
+    """
+    Some new team names appear in the matches sofa data set. 
+    here we collect them and display them to be added to the mapping 
+    """ 
+    join_file_path = "/home/james/bet_project/whatstheodds/output/scots_nostats_20250816_200817/join_table.csv"
+    join_df = pd.read_csv(join_file_path)
+    valid_ids = set(join_df.sofa_match_id.unique())
+    df1 = df[~df["match_id"].isin(valid_ids)]
+
+#    teams_set = set( df1["home_team_slug"].unique()) 
+#    team2 = set(df1["away_team_slug"].unique()) 
+#    teams = teams_set | team2 
+#    for team in teams:
+#        print(team)
+    mm = MatchMapper()
+    
+    none_counter = 0
+    for idx, row in df1.iterrows():
+        print(f"{row['home_team_slug']} vs {row['away_team_slug']}")
+        r = mm.map_match_from_row(row)
+        print(f"Result: {r}")
+
+        none_counter += 1 if r is None else 0 
+
+
+    print(f"None count = {none_counter}")
+
+
+
+
+

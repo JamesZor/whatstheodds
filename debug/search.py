@@ -18,8 +18,8 @@ def main_analysis():
     print("=" * 70)
 
     # Load your data
-    match_file = "/home/james/bet_project/football/scot_test_mixed/football_data_mixed_matches.csv"
-    join_file = "/home/james/bet_project/whatstheodds/output/scots_20250814_185431/join_table.csv"
+    match_file = "/home/james/bet_project/football_data/scot_nostats/football_data_mixed_matches.csv"
+    join_file = "/home/james/bet_project/whatstheodds/output/scots_nostats_20250816_200817/join_table.csv"
 
     df = pd.read_csv(match_file)
     df["match_date"] = pd.to_datetime(df["match_date"])

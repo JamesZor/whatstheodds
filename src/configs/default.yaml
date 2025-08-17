@@ -47,7 +47,7 @@ betfair_football:
       "OVER_UNDER_15",
       "OVER_UNDER_25",
       "OVER_UNDER_35",
-      # "CORRECT_SCORE", # TODO:
+      "CORRECT_SCORE", # TODO:
             #   "CORRECT_SCORE2",
       "MATCH_ODDS",
       # "BOTH_TEAMS_TO_SCORE",
