@@ -5,7 +5,7 @@ from typing import Optional
 
 from omegaconf import DictConfig
 
-from src.utils import load_config
+from whatstheodds.utils import load_config
 
 logger = logging.getLogger(__name__)
 

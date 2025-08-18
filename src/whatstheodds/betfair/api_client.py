@@ -6,7 +6,7 @@ import betfairlightweight  # type: ignore
 from dotenv import dotenv_values
 from omegaconf import DictConfig
 
-from src.utils import load_config
+from whatstheodds.utils import load_config
 
 logger = logging.getLogger(__name__)
 

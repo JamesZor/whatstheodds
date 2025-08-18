@@ -5,14 +5,14 @@ from pathlib import Path
 
 import pandas as pd
 import pytest
+from extractors import MatchExtractor
 from omegaconf import DictConfig, OmegaConf
 
-from extractors import MatchExtractor
-from src.betfair.dataclasses import BetfairSearchRequest
-from src.betfair.downloader import BetfairDownloader, BetfairDownloadError
-from src.betfair.search_engine import BetfairSearchEngine
-from src.pipeline.pipeline_coordinator import PipelineCoordinator
-from src.utils import load_config
+from whatstheodds.betfair.dataclasses import BetfairSearchRequest
+from whatstheodds.betfair.downloader import BetfairDownloader, BetfairDownloadError
+from whatstheodds.betfair.search_engine import BetfairSearchEngine
+from whatstheodds.pipeline.pipeline_coordinator import PipelineCoordinator
+from whatstheodds.utils import load_config
 
 """
 Index(['minutes', 'timestamp', 'over_0_5', 'under_0_5', 'over_3_5',

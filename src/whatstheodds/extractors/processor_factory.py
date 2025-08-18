@@ -8,7 +8,7 @@ from typing import Dict, List, Optional
 
 from omegaconf import DictConfig
 
-from src.utils import load_config
+from whatstheodds.utils import load_config
 
 from .market_processors import (
     CorrectScoreProcessor,

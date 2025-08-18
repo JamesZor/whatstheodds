@@ -4,11 +4,11 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from src.betfair.downloader import BetfairDownloader, BetfairDownloadError
-from src.betfair.search_engine import BetfairSearchEngine, BetfairSearchRequest
-from src.extractors import MatchExtractor
-from src.mappers.match_mapper import MatchMapper
-from src.processor.dataframe_processor import DataFrameProcessor
+from whatstheodds.betfair.downloader import BetfairDownloader, BetfairDownloadError
+from whatstheodds.betfair.search_engine import BetfairSearchEngine, BetfairSearchRequest
+from whatstheodds.extractors import MatchExtractor
+from whatstheodds.mappers.match_mapper import MatchMapper
+from whatstheodds.processor.dataframe_processor import DataFrameProcessor
 
 match_file_path = Path(
     "/home/james/bet_project/football_data/scot_nostats/football_data_mixed_matches.csv"
@@ -66,7 +66,6 @@ def test_two():
     odds.plot.line(x="minutes", y="over_1_5")
 
 
-
 @pytest.mark.skip()
 def test_three_():
     # Initialize processor
@@ -79,6 +78,7 @@ def test_three_():
         save_formats=["csv"],
         cleanup_on_success=True,
     )
+
 
 @pytest.mark.skip()
 def test_four():
@@ -95,8 +95,8 @@ def test_four():
     valid_ids = set(join_df.sofa_match_id.unique())
     df1 = df[~df["match_id"].isin(valid_ids)]
     # Initialize processor
-#    print(len(df1))
-#    print(df1)
+    #    print(len(df1))
+    #    print(df1)
     processor = DataFrameProcessor()
     # Process DataFrame and save results
     processed_data, saved_files = processor.process_and_save(
@@ -107,57 +107,52 @@ def test_four():
     )
 
 
-
-
-@pytest.mark.skip()
+# @pytest.mark.skip()
 def test_five():
     """
-    Some new team names appear in the matches sofa data set. 
-    here we collect them and display them to be added to the mapping 
-    """ 
+    Some new team names appear in the matches sofa data set.
+    here we collect them and display them to be added to the mapping
+    """
     join_file_path = "/home/james/bet_project/whatstheodds/output/scots_nostats_20250816_200817/join_table.csv"
     join_df = pd.read_csv(join_file_path)
     valid_ids = set(join_df.sofa_match_id.unique())
     df1 = df[~df["match_id"].isin(valid_ids)]
 
-#    teams_set = set( df1["home_team_slug"].unique()) 
-#    team2 = set(df1["away_team_slug"].unique()) 
-#    teams = teams_set | team2 
-#    for team in teams:
-#        print(team)
+    #    teams_set = set( df1["home_team_slug"].unique())
+    #    team2 = set(df1["away_team_slug"].unique())
+    #    teams = teams_set | team2
+    #    for team in teams:
+    #        print(team)
     mm = MatchMapper()
-    
+
     none_counter = 0
     for idx, row in df1.iterrows():
         print(f"{row['home_team_slug']} vs {row['away_team_slug']}")
         r = mm.map_match_from_row(row)
         print(f"Result: {r}")
 
-        none_counter += 1 if r is None else 0 
+        none_counter += 1 if r is None else 0
 
     print(f"None count = {none_counter}")
 
 
-def test_six(): 
+@pytest.mark.skip()
+def test_six():
     """
-    here we eed to join the main run and the repair run 
-    """ 
+    here we eed to join the main run and the repair run
+    """
     main_path = "/home/james/bet_project/whatstheodds/output/scots_nostats_20250816_200817/odds_table.csv"
-    repair_path = "/home/james/bet_project/whatstheodds/output/scots_2_20250817_110515/odds_table.csv" 
+    repair_path = "/home/james/bet_project/whatstheodds/output/scots_2_20250817_110515/odds_table.csv"
 
-    main_df = pd.read_csv(main_path) 
-    repair_df = pd.read_csv(repair_path) 
+    main_df = pd.read_csv(main_path)
+    repair_df = pd.read_csv(repair_path)
 
-    df_odds = pd.concat( [main_df, repair_df]) 
+    df_odds = pd.concat([main_df, repair_df])
 
     print()
-    print(f" size of df_odds : { len(df_odds['sofa_match_id'].unique()) } " )
-    print(f" size of df : { df.shape } " )
+    print(f" size of df_odds : { len(df_odds['sofa_match_id'].unique()) } ")
+    print(f" size of df : { df.shape } ")
 
     print(df_odds.head(10))
 
     df_odds.to_csv("/home/james/bet_project/football_data/scot_nostats/odds.csv")
-
-
-
-

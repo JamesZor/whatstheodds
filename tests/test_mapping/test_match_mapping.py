@@ -5,7 +5,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from src.mappers.match_mapper import MatchMapper
+from whatstheodds.mappers.match_mapper import MatchMapper
 
 
 def test_basic_setup():

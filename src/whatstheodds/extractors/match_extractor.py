@@ -13,7 +13,7 @@ from typing import Any, Dict, List, Optional
 import pandas as pd
 from omegaconf import DictConfig
 
-from src.utils import load_config
+from whatstheodds.utils import load_config
 
 from .odds_processor import OddsDataProcessor
 from .processor_factory import ProcessorFactory

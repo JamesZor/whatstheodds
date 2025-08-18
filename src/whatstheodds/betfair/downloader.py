@@ -8,8 +8,8 @@ import betfairlightweight
 from omegaconf import DictConfig
 from tqdm import tqdm
 
-from src.storage.temp_manager import TempStorage
-from src.utils import load_config
+from whatstheodds.storage.temp_manager import TempStorage
+from whatstheodds.utils import load_config
 
 from .api_client import setup_betfair_api_client
 from .dataclasses import (
@@ -34,7 +34,7 @@ class BetfairDownloader:
         tmp_manager: Optional[TempStorage] = None,
         cfg: Optional[DictConfig] = None,
     ):
-        self.cfg: DictConfig = load_config() if cfg is None else cfg
+        self.cfg: DictConfig = load_config() if cfg is None else cfg  # type: ignore[assignment]
         self.client: betfairlightweight.APIClient = (
             setup_betfair_api_client() if api_client is None else api_client
         )
@@ -216,7 +216,9 @@ class BetfairDownloader:
                 )
 
             # Find the downloaded file
-            downloaded_file = self._find_downloaded_file(save_folder, search_result)
+            downloaded_file: Path = self._find_downloaded_file(
+                save_folder, search_result
+            )
 
             # Validate the downloaded file
             if not self._validate_downloaded_file(downloaded_file):

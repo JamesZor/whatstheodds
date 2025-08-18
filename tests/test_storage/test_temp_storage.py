@@ -4,7 +4,7 @@ import logging
 import pytest
 from omegaconf import DictConfig, OmegaConf
 
-from src.storage.temp_manager import TempStorage
+from whatstheodds.storage.temp_manager import TempStorage
 
 
 def test_basic_setup():

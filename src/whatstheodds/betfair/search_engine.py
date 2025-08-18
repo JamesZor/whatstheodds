@@ -4,7 +4,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union
 import betfairlightweight
 from omegaconf import DictConfig
 
-from src.utils import load_config
+from whatstheodds.utils import load_config
 
 from .api_client import setup_betfair_api_client
 from .dataclasses import (

@@ -2,7 +2,7 @@ import betfairlightweight
 import pytest
 from omegaconf import DictConfig, OmegaConf
 
-from src.betfair.api_client import CONFIG, setup_betfair_api_client
+from whatstheodds.betfair.api_client import CONFIG, setup_betfair_api_client
 
 
 def test_basic():

@@ -7,12 +7,12 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import pandas as pd
 from omegaconf import DictConfig
 
-from src.pipeline.pipeline_coordinator import (
+from whatstheodds.pipeline.pipeline_coordinator import (
     PipelineCoordinator,
     ProcessingResult,
     ProcessingStatus,
 )
-from src.utils import load_config
+from whatstheodds.utils import load_config
 
 logger = logging.getLogger(__name__)
 

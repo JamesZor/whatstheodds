@@ -9,7 +9,7 @@ from typing import Dict, List, Optional, Set, Tuple
 
 from omegaconf import DictConfig
 
-from src.utils import load_config
+from whatstheodds.utils import load_config
 
 logger = logging.getLogger(__name__)
 

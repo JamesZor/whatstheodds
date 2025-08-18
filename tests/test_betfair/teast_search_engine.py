@@ -7,9 +7,9 @@ import pandas as pd
 import pytest
 from omegaconf import DictConfig, OmegaConf
 
-from src.betfair.api_client import CONFIG, setup_betfair_api_client
-from src.betfair.search_engine import BetfairSearchEngine, BetfairSearchRequest
-from src.pipeline.pipeline_coordinator import PipelineCoordinator
+from whatstheodds.betfair.api_client import CONFIG, setup_betfair_api_client
+from whatstheodds.betfair.search_engine import BetfairSearchEngine, BetfairSearchRequest
+from whatstheodds.pipeline.pipeline_coordinator import PipelineCoordinator
 
 
 @pytest.mark.skip("moved on")

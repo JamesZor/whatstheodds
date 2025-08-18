@@ -5,9 +5,9 @@ from datetime import datetime
 import pytest
 from omegaconf import DictConfig, OmegaConf
 
-from src.betfair.dataclasses import BetfairSearchRequest
-from src.betfair.downloader import BetfairDownloader, BetfairDownloadError
-from src.betfair.search_engine import BetfairSearchEngine
+from whatstheodds.betfair.dataclasses import BetfairSearchRequest
+from whatstheodds.betfair.downloader import BetfairDownloader, BetfairDownloadError
+from whatstheodds.betfair.search_engine import BetfairSearchEngine
 
 
 def test_basic_setup():

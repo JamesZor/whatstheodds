@@ -7,15 +7,15 @@ import betfairlightweight
 from omegaconf import DictConfig
 from tqdm import tqdm
 
-from src.betfair.api_client import setup_betfair_api_client
-from src.betfair.dataclasses import (
+from whatstheodds.betfair.api_client import setup_betfair_api_client
+from whatstheodds.betfair.dataclasses import (
     BetfairSearchResultMultiDate,
     BetfairSearchSingleMarketResult,
 )
-from src.betfair.downloader import BetfairDownloader
-from src.extractors import MatchExtractor
-from src.storage.temp_manager import TempStorage
-from src.utils import load_config
+from whatstheodds.betfair.downloader import BetfairDownloader
+from whatstheodds.extractors import MatchExtractor
+from whatstheodds.storage.temp_manager import TempStorage
+from whatstheodds.utils import load_config
 
 logger = logging.getLogger(__name__)
 

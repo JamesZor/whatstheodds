@@ -7,7 +7,7 @@ from typing import Dict, List, Optional, Set
 
 from omegaconf import DictConfig
 
-from src.utils import load_config
+from whatstheodds.utils import load_config
 
 from ..base_processor import BaseMarketProcessor
 

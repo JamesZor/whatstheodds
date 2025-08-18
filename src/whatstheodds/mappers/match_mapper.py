@@ -7,8 +7,8 @@ from typing import Dict, List, Optional
 import pandas as pd
 from omegaconf import DictConfig
 
-from src.betfair.dataclasses import BetfairSearchRequest
-from src.utils import load_config
+from whatstheodds.betfair.dataclasses import BetfairSearchRequest
+from whatstheodds.utils import load_config
 
 logger = logging.getLogger(__name__)
 

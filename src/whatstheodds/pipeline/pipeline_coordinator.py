@@ -9,14 +9,14 @@ import betfairlightweight
 import pandas as pd
 from omegaconf import DictConfig
 
-from src.betfair.api_client import setup_betfair_api_client
-from src.betfair.dataclasses import BetfairSearchRequest, BetfairSearchResult
-from src.betfair.downloader import BetfairDownloader
-from src.betfair.search_engine import BetfairSearchEngine
-from src.extractors import MatchExtractor
-from src.mappers.match_mapper import MatchMapper
-from src.storage.temp_manager import TempStorage
-from src.utils import load_config
+from whatstheodds.betfair.api_client import setup_betfair_api_client
+from whatstheodds.betfair.dataclasses import BetfairSearchRequest, BetfairSearchResult
+from whatstheodds.betfair.downloader import BetfairDownloader
+from whatstheodds.betfair.search_engine import BetfairSearchEngine
+from whatstheodds.extractors import MatchExtractor
+from whatstheodds.mappers.match_mapper import MatchMapper
+from whatstheodds.storage.temp_manager import TempStorage
+from whatstheodds.utils import load_config
 
 logger = logging.getLogger(__name__)
 

@@ -5,10 +5,10 @@ import betfairlightweight
 import pytest
 from omegaconf import DictConfig, OmegaConf
 
-from src.betfair.api_client import CONFIG, setup_betfair_api_client
-from src.betfair.dataclasses import BetfairSearchResultMultiDate
-from src.betfair.search_engine import BetfairSearchEngine, BetfairSearchRequest
-from src.mappers.helper_match_mapper import HelperMapper
+from whatstheodds.betfair.api_client import CONFIG, setup_betfair_api_client
+from whatstheodds.betfair.dataclasses import BetfairSearchResultMultiDate
+from whatstheodds.betfair.search_engine import BetfairSearchEngine, BetfairSearchRequest
+from whatstheodds.mappers.helper_match_mapper import HelperMapper
 
 
 @pytest.mark.skip()
