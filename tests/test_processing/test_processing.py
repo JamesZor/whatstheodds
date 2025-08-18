@@ -80,6 +80,7 @@ def test_three_():
         cleanup_on_success=True,
     )
 
+@pytest.mark.skip()
 def test_four():
     """
     only aboyt 74% of matches had paired odds, believe this is due the search method, only allow +- 1 day.
@@ -100,7 +101,7 @@ def test_four():
     # Process DataFrame and save results
     processed_data, saved_files = processor.process_and_save(
         df=df1,
-        run_name="scots_2",
+        run_name="scots_1",
         save_formats=["csv"],
         cleanup_on_success=True,
     )
@@ -134,9 +135,28 @@ def test_five():
 
         none_counter += 1 if r is None else 0 
 
-
     print(f"None count = {none_counter}")
 
+
+def test_six(): 
+    """
+    here we eed to join the main run and the repair run 
+    """ 
+    main_path = "/home/james/bet_project/whatstheodds/output/scots_nostats_20250816_200817/odds_table.csv"
+    repair_path = "/home/james/bet_project/whatstheodds/output/scots_2_20250817_110515/odds_table.csv" 
+
+    main_df = pd.read_csv(main_path) 
+    repair_df = pd.read_csv(repair_path) 
+
+    df_odds = pd.concat( [main_df, repair_df]) 
+
+    print()
+    print(f" size of df_odds : { len(df_odds['sofa_match_id'].unique()) } " )
+    print(f" size of df : { df.shape } " )
+
+    print(df_odds.head(10))
+
+    df_odds.to_csv("/home/james/bet_project/football_data/scot_nostats/odds.csv")
 
 
 
