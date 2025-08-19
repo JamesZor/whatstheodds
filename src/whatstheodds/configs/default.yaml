@@ -37,8 +37,9 @@ search:
     hour: 0
 
 betfair_downloader:
-  max_auth_attempts: 5
-  error_file_size: 1000 # less than 1KB
+  max_auth_attempts: 3
+  error_file_size: 500 # less than 1KB
+  html_sleep_retry: 3 # seconds to sleep after a html
 
 
 betfair_football:

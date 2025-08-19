@@ -11,7 +11,19 @@ from whatstheodds.extractors import MatchExtractor
 from whatstheodds.mappers.match_mapper import MatchMapper
 from whatstheodds.processor.dataframe_processor import DataFrameProcessor
 
-logger = logging.getLogger(__name__)
+# Configure root logger to show everything
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[
+        logging.StreamHandler(),  # This sends to console
+    ],
+)
+
+# Set specific loggers
+logging.getLogger("whatstheodds.betfair.downloader").setLevel(logging.DEBUG)
+logging.getLogger("whatstheodds.betfair.rate_limiter").setLevel(logging.DEBUG)
+
 ### configs
 MATCHES_FILE_PATH = Path(
     "/home/james/bet_project/football_data/scot_nostats_20_to_24/football_data_mixed_matches.csv"
@@ -39,7 +51,7 @@ def download_odds_from_df(matches: pd.DataFrame, dir_name: str) -> None:
     """
     processor = DataFrameProcessor()
     usage = betfair_rate_limiter.get_current_usage()
-    logger.info(
+    logging.info(
         f"Starting downloads - Rate limiter usage: {usage['usage_percent']:.1f}%"
     )
     processed_data, saved_files = processor.process_and_save(
@@ -52,7 +64,7 @@ def download_odds_from_df(matches: pd.DataFrame, dir_name: str) -> None:
     )
 
     final_usage = betfair_rate_limiter.get_current_usage()
-    logger.info(
+    logging.info(
         f"Downloads complete - Final rate limiter usage: {final_usage['usage_percent']:.1f}%"
     )
 

@@ -1,6 +1,7 @@
 import bz2
 import json
 import logging
+import time
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union
 
@@ -20,6 +21,8 @@ from .dataclasses import (
 
 logger = logging.getLogger(__name__)
 from .rate_limiter import RateLimitedContext, betfair_rate_limiter
+
+logger.setLevel(level=logging.DEBUG)
 
 
 class BetfairDownloadError(Exception):
@@ -207,12 +210,17 @@ class BetfairDownloader:
             )
 
             # Perform the download using the API
+            logger.info(
+                f"About to make download API call for {search_result.market_type}"
+            )
             with RateLimitedContext():
+                logger.info("Rate limiter cleared, making actual API call")
                 result = self.client.historic.download_file(
                     file_path=search_result.file,
                     store_directory=str(save_folder),
                 )
 
+            logger.info(f"API call completed for {search_result.market_type}")
             # Verify download success
             if not result:
                 raise BetfairDownloadError(
@@ -234,6 +242,43 @@ class BetfairDownloader:
                     logger.warning(
                         "Received HTML instead of data, attempting reauthentication"
                     )
+                    logger.info(
+                        f"Trying simple retry for {search_result.market_type} (might be temporary 302 redirect)"
+                    )
+                    time.sleep(self.cfg.betfair_downloader.html_sleep_retry)
+
+                    try:
+                        # Try the download one more time without reauthentication
+                        with RateLimitedContext():
+                            retry_result = self.client.historic.download_file(
+                                file_path=search_result.file,
+                                store_directory=str(save_folder),
+                            )
+
+                        if retry_result:
+                            retry_downloaded_file = self._find_downloaded_file(
+                                save_folder, search_result
+                            )
+                            if self._validate_downloaded_file(retry_downloaded_file):
+                                logger.info(
+                                    f"Simple retry worked for {search_result.market_type}!"
+                                )
+                                return retry_downloaded_file
+                            else:
+                                # Clean up the failed retry file
+                                retry_downloaded_file.unlink(missing_ok=True)
+                                logger.warning(
+                                    f"Simple retry failed for {search_result.market_type}, trying reauthentication..."
+                                )
+                        else:
+                            logger.warning(
+                                f"Simple retry got no result for {search_result.market_type}"
+                            )
+
+                    except Exception as retry_error:
+                        logger.warning(
+                            f"Simple retry errored for {search_result.market_type}: {retry_error}"
+                        )
 
                     if self._reauthenticate():
                         # Retry the download once after reauthentication
