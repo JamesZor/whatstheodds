@@ -12,17 +12,17 @@ from whatstheodds.mappers.match_mapper import MatchMapper
 from whatstheodds.processor.dataframe_processor import DataFrameProcessor
 
 # Configure root logger to show everything
-logging.basicConfig(
-    level=logging.DEBUG,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    handlers=[
-        logging.StreamHandler(),  # This sends to console
-    ],
-)
-
-# Set specific loggers
-logging.getLogger("whatstheodds.betfair.downloader").setLevel(logging.DEBUG)
-logging.getLogger("whatstheodds.betfair.rate_limiter").setLevel(logging.DEBUG)
+# logging.basicConfig(
+#     level=logging.ERROR,
+#     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+#     handlers=[
+#         logging.StreamHandler(),  # This sends to console
+#     ],
+# )
+#
+# # Set specific loggers
+# logging.getLogger("whatstheodds.betfair.downloader").setLevel(logging.DEBUG)
+# logging.getLogger("whatstheodds.betfair.rate_limiter").setLevel(logging.DEBUG)
 
 ### configs
 MATCHES_FILE_PATH = Path(
