@@ -177,9 +177,82 @@ class BetfairDownloader:
             logger.error(f"Reauthentication failed: {str(e)}")
             return False
 
-    def _download_single_market(
-        self, search_result: BetfairSearchSingleMarketResult, retry_on_html: bool = True
-    ) -> Path:
+    def _attempt_download(self, search_result, save_folder):
+        """Single download attempt - returns Path if successful, None if failed"""
+        try:
+            with RateLimitedContext():
+                self.client.historic.download_file(
+                    file_path=search_result.file,
+                    store_directory=str(save_folder),
+                )
+
+            downloaded_file = self._find_downloaded_file(save_folder, search_result)
+
+            if self._validate_downloaded_file(downloaded_file):
+                return downloaded_file
+            else:
+                downloaded_file.unlink(missing_ok=True)
+                return None
+
+        except Exception as e:
+            logger.warning(f"Download attempt failed: {e}")
+            return None
+
+    def _download_with_retries(self, search_result, save_folder, retry_on_html):
+        """Download with built-in retry logic"""
+
+        # Attempt 1: Normal download
+        result = self._attempt_download(search_result, save_folder)
+        if result:
+            return result
+
+        if not retry_on_html:
+            raise BetfairDownloadError(
+                f"Download failed for {search_result.market_type}"
+            )
+
+        # Attempt 2: Simple retry (for 302s)
+        # Get config values with sensible defaults
+        max_302_retries = getattr(self.cfg, "betfair_downloader", {}).get(
+            "html_retries", 3
+        )
+        sleep_between_retries = getattr(self.cfg, "betfair_downloader", {}).get(
+            "html_sleep_before_retry", 3
+        )
+
+        for attempt in range(max_302_retries):
+            logger.info(
+                f"302 retry attempt {attempt + 1}/{max_302_retries} for {search_result.market_type}"
+            )
+            time.sleep(sleep_between_retries)
+
+            result = self._attempt_download(search_result, save_folder)
+            if result:
+                logger.info(
+                    f"302 retry worked on attempt {attempt + 1} for {search_result.market_type}"
+                )
+                return result
+
+            logger.warning(
+                f"302 retry attempt {attempt + 1} failed for {search_result.market_type}"
+            )
+
+        # Attempt 3: Reauthenticate and retry
+        logger.warning(
+            f"Simple retry failed, reauthenticating for {search_result.market_type}"
+        )
+        if self._reauthenticate():
+            result = self._attempt_download(search_result, save_folder)
+            if result:
+                logger.info(f"✅ Auth retry worked for {search_result.market_type}")
+                return result
+
+        # All attempts failed
+        raise BetfairDownloadError(
+            f"All retry attempts failed for {search_result.market_type}"
+        )
+
+    def _download_single_market(self, search_result, retry_on_html=True):
         """
         Download a single market file with validation
 
@@ -194,135 +267,157 @@ class BetfairDownloader:
             ValueError: If search result is invalid
             BetfairDownloadError: If download fails
         """
-        self._validate_search_result(search_result)
+        save_folder = self.tmp_storage.get_match_folder_path(search_result.match_id)
 
-        # Ensure temp folder exists
-        save_folder: Path = self.tmp_storage.get_match_folder_path(
-            search_result.match_id
-        )
-        if not save_folder.exists():
-            logger.warning(f"Match folder doesn't exist, creating: {save_folder}")
-            self.tmp_storage.create_temp_match_folder(search_result.match_id)
+        # Try the download with automatic retries
+        return self._download_with_retries(search_result, save_folder, retry_on_html)
 
-        try:
-            logger.info(
-                f"Downloading {search_result.market_type} for match {search_result.match_id}"
-            )
-
-            # Perform the download using the API
-            logger.info(
-                f"About to make download API call for {search_result.market_type}"
-            )
-            with RateLimitedContext():
-                logger.info("Rate limiter cleared, making actual API call")
-                result = self.client.historic.download_file(
-                    file_path=search_result.file,
-                    store_directory=str(save_folder),
-                )
-
-            logger.info(f"API call completed for {search_result.market_type}")
-            # Verify download success
-            if not result:
-                raise BetfairDownloadError(
-                    "Download failed - no data received from API"
-                )
-
-            # Find the downloaded file
-            downloaded_file: Path = self._find_downloaded_file(
-                save_folder, search_result
-            )
-
-            # Validate the downloaded file
-            if not self._validate_downloaded_file(downloaded_file):
-                # Delete the invalid file
-                downloaded_file.unlink(missing_ok=True)
-
-                # If we got HTML, it's likely an auth issue
-                if retry_on_html:
-                    logger.warning(
-                        "Received HTML instead of data, attempting reauthentication"
-                    )
-                    logger.info(
-                        f"Trying simple retry for {search_result.market_type} (might be temporary 302 redirect)"
-                    )
-                    time.sleep(self.cfg.betfair_downloader.html_sleep_retry)
-
-                    try:
-                        # Try the download one more time without reauthentication
-                        with RateLimitedContext():
-                            retry_result = self.client.historic.download_file(
-                                file_path=search_result.file,
-                                store_directory=str(save_folder),
-                            )
-
-                        if retry_result:
-                            retry_downloaded_file = self._find_downloaded_file(
-                                save_folder, search_result
-                            )
-                            if self._validate_downloaded_file(retry_downloaded_file):
-                                logger.info(
-                                    f"Simple retry worked for {search_result.market_type}!"
-                                )
-                                return retry_downloaded_file
-                            else:
-                                # Clean up the failed retry file
-                                retry_downloaded_file.unlink(missing_ok=True)
-                                logger.warning(
-                                    f"Simple retry failed for {search_result.market_type}, trying reauthentication..."
-                                )
-                        else:
-                            logger.warning(
-                                f"Simple retry got no result for {search_result.market_type}"
-                            )
-
-                    except Exception as retry_error:
-                        logger.warning(
-                            f"Simple retry errored for {search_result.market_type}: {retry_error}"
-                        )
-
-                    if self._reauthenticate():
-                        # Retry the download once after reauthentication
-                        return self._download_single_market(
-                            search_result, retry_on_html=False
-                        )
-                    else:
-                        raise BetfairDownloadError(
-                            f"Download failed for {search_result.market_type}: "
-                            "Received HTML page (likely authentication issue)"
-                        )
-                else:
-                    raise BetfairDownloadError(
-                        f"Download validation failed for {search_result.market_type}: "
-                        "Invalid file format after retry"
-                    )
-
-            logger.info(
-                f"Successfully downloaded and validated {search_result.market_type} to {downloaded_file}"
-            )
-            return downloaded_file
-
-        except betfairlightweight.exceptions.BetfairError as e:
-            error_msg = (
-                f"Betfair API error downloading {search_result.market_type}: {str(e)}"
-            )
-            logger.error(error_msg)
-
-            # Check if it's an auth error
-            if "session" in str(e).lower() or "login" in str(e).lower():
-                if retry_on_html and self._reauthenticate():
-                    return self._download_single_market(
-                        search_result, retry_on_html=False
-                    )
-
-            raise BetfairDownloadError(error_msg) from e
-
-        except Exception as e:
-            error_msg = (
-                f"Unexpected error downloading {search_result.market_type}: {str(e)}"
-            )
-            logger.error(error_msg)
-            raise BetfairDownloadError(error_msg) from e
-
+    # def _download_single_market(
+    #     self, search_result: BetfairSearchSingleMarketResult, retry_on_html: bool = True
+    # ) -> Path:
+    #     """
+    #     Download a single market file with validation
+    #
+    #     Args:
+    #         search_result: Search result containing file path and metadata
+    #         retry_on_html: Whether to retry with reauthentication if HTML is received
+    #
+    #     Returns:
+    #         Path to the downloaded file
+    #
+    #     Raises:
+    #         ValueError: If search result is invalid
+    #         BetfairDownloadError: If download fails
+    #     """
+    #     self._validate_search_result(search_result)
+    #
+    #     # Ensure temp folder exists
+    #     save_folder: Path = self.tmp_storage.get_match_folder_path(
+    #         search_result.match_id
+    #     )
+    #     if not save_folder.exists():
+    #         logger.warning(f"Match folder doesn't exist, creating: {save_folder}")
+    #         self.tmp_storage.create_temp_match_folder(search_result.match_id)
+    #
+    #     try:
+    #         logger.info(
+    #             f"Downloading {search_result.market_type} for match {search_result.match_id}"
+    #         )
+    #
+    #         # Perform the download using the API
+    #         logger.info(
+    #             f"About to make download API call for {search_result.market_type}"
+    #         )
+    #         with RateLimitedContext():
+    #             logger.info("Rate limiter cleared, making actual API call")
+    #             result = self.client.historic.download_file(
+    #                 file_path=search_result.file,
+    #                 store_directory=str(save_folder),
+    #             )
+    #
+    #         logger.info(f"API call completed for {search_result.market_type}")
+    #         # Verify download success
+    #         if not result:
+    #             raise BetfairDownloadError(
+    #                 "Download failed - no data received from API"
+    #             )
+    #
+    #         # Find the downloaded file
+    #         downloaded_file: Path = self._find_downloaded_file(
+    #             save_folder, search_result
+    #         )
+    #
+    #         # Validate the downloaded file
+    #         if not self._validate_downloaded_file(downloaded_file):
+    #             # Delete the invalid file
+    #             downloaded_file.unlink(missing_ok=True)
+    #
+    #             # If we got HTML, it's likely an auth issue
+    #             if retry_on_html:
+    #                 logger.warning(
+    #                     "Received HTML instead of data, attempting reauthentication"
+    #                 )
+    #                 logger.info(
+    #                     f"Trying simple retry for {search_result.market_type} (might be temporary 302 redirect)"
+    #                 )
+    #                 time.sleep(self.cfg.betfair_downloader.html_sleep_retry)
+    #
+    #                 try:
+    #                     # Try the download one more time without reauthentication
+    #                     with RateLimitedContext():
+    #                         retry_result = self.client.historic.download_file(
+    #                             file_path=search_result.file,
+    #                             store_directory=str(save_folder),
+    #                         )
+    #
+    #                     if retry_result:
+    #                         retry_downloaded_file = self._find_downloaded_file(
+    #                             save_folder, search_result
+    #                         )
+    #                         if self._validate_downloaded_file(retry_downloaded_file):
+    #                             logger.info(
+    #                                 f"Simple retry worked for {search_result.market_type}!"
+    #                             )
+    #                             return retry_downloaded_file
+    #                         else:
+    #                             # Clean up the failed retry file
+    #                             retry_downloaded_file.unlink(missing_ok=True)
+    #                             logger.warning(
+    #                                 f"Simple retry failed for {search_result.market_type}, trying reauthentication..."
+    #                             )
+    #                     else:
+    #                         logger.warning(
+    #                             f"Simple retry got no result for {search_result.market_type}"
+    #                         )
+    #
+    #                 except Exception as retry_error:
+    #                     logger.warning(
+    #                         f"Simple retry errored for {search_result.market_type}: {retry_error}"
+    #                     )
+    #
+    #                 if self._reauthenticate():
+    #                     # Retry the download once after reauthentication
+    #                     return self._download_single_market(
+    #                         search_result, retry_on_html=False
+    #                     )
+    #                 else:
+    #                     raise BetfairDownloadError(
+    #                         f"Download failed for {search_result.market_type}: "
+    #                         "Received HTML page (likely authentication issue)"
+    #                     )
+    #             else:
+    #                 raise BetfairDownloadError(
+    #                     f"Download validation failed for {search_result.market_type}: "
+    #                     "Invalid file format after retry"
+    #                 )
+    #
+    #         logger.info(
+    #             f"Successfully downloaded and validated {search_result.market_type} to {downloaded_file}"
+    #         )
+    #         return downloaded_file
+    #
+    #     except betfairlightweight.exceptions.BetfairError as e:
+    #         error_msg = (
+    #             f"Betfair API error downloading {search_result.market_type}: {str(e)}"
+    #         )
+    #         logger.error(error_msg)
+    #
+    #         # Check if it's an auth error
+    #         if "session" in str(e).lower() or "login" in str(e).lower():
+    #             if retry_on_html and self._reauthenticate():
+    #                 return self._download_single_market(
+    #                     search_result, retry_on_html=False
+    #                 )
+    #
+    #         raise BetfairDownloadError(error_msg) from e
+    #
+    #     except Exception as e:
+    #         error_msg = (
+    #             f"Unexpected error downloading {search_result.market_type}: {str(e)}"
+    #         )
+    #         logger.error(error_msg)
+    #         raise BetfairDownloadError(error_msg) from e
+    #
     def _find_downloaded_file(
         self, save_folder: Path, search_result: BetfairSearchSingleMarketResult
     ) -> Path:
