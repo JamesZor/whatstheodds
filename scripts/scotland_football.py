@@ -36,13 +36,16 @@ def download_odds_from_df(matches: pd.DataFrame, dir_name: str) -> None:
     """
     processor = DataFrameProcessor()
     processed_data, saved_files = processor.process_and_save(
-        df=df,
+        df=matches,
         run_name=dir_name,
         save_formats=["csv"],
         home_column="home_team",
         away_column="away_team",
         cleanup_on_success=True,
     )
+
+    print(saved_files)
+    print("Done")
 
 
 def merge_repair_odds_and_save(
@@ -64,4 +67,6 @@ def merge_repair_odds_and_save(
 if __name__ == "__main__":
     missing_odds_match_ids: pd.DataFrame = find_match_diff_odds(df, odds)
     print(missing_odds_match_ids.shape)
+    download_odds_from_df(missing_odds_match_ids, "repair_scot")
+
     # TODO: run me on the other machine

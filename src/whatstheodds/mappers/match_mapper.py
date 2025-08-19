@@ -312,8 +312,8 @@ class MatchMapper:
         row: pd.Series,
         date_column: str = "match_date",
         match_id_column: str = "match_id",
-        home_column: str = "home_team_slug",
-        away_column: str = "away_team_slug",
+        home_column: str = "home_team",
+        away_column: str = "away_team",
         tournament_column: str = "tournament_id",
     ) -> Optional[BetfairSearchRequest]:
         """

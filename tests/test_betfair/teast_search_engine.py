@@ -12,7 +12,7 @@ from whatstheodds.betfair.search_engine import BetfairSearchEngine, BetfairSearc
 from whatstheodds.pipeline.pipeline_coordinator import PipelineCoordinator
 
 
-@pytest.mark.skip("moved on")
+# @pytest.mark.skip("moved on")
 def test_basic_setup():
     print()
     print("- - " * 50)
@@ -35,7 +35,7 @@ def test_basic_setup():
     print(len(bse.cfg.betfair_football.markets))
 
 
-@pytest.mark.skip("moved on")
+# @pytest.mark.skip("moved on")
 def test_market_search():
     print()
     print("- - " * 50)

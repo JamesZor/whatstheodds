@@ -18,7 +18,7 @@ class TempStorage:
     def _set_up_dirs(self) -> None:
         """Set up base directories for data and temp storage"""
         try:
-            self.dir_base: Path = Path(__file__).parent.parent.parent
+            self.dir_base: Path = Path(__file__).parent.parent.parent.parent
             self.dir_data: Path = self.dir_base / self.cfg.storage.data
             self.dir_temp: Path = self.dir_base / self.cfg.storage.temp
 

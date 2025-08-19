@@ -37,7 +37,7 @@ def test_match_map():
 
 def test_match_map_2():
     match_file_path = Path(
-        "/home/james/bet_project/football/scot_test_mixed/football_data_mixed_matches.csv"
+        "/home/james/bet_project/football_data/scot_nostats_20_to_24/football_data_mixed_matches.csv"
     )
     mm = MatchMapper()
     match_df = pd.read_csv(match_file_path)
@@ -45,6 +45,6 @@ def test_match_map_2():
     match_df["match_date"] = pd.to_datetime(match_df["match_date"])
 
     for index, row in match_df.head(5).iterrows():
-        print(f"{row['home_team_slug']} vs {row['away_team_slug']}")
+        print(f"{row['home_team']} vs {row['away_team']}")
         r = mm.map_match_from_row(row)
         print(f"Result: {r}")
