@@ -20,7 +20,7 @@ class BetfairHistoricalRateLimiter:
 
     def __init__(
         self,
-        max_requests: int = cfg.betfair_rate_limit.max_requests,  # type: ignore[union-attr]
+        max_requests: int = cfg.betfair_rate_limit.max_request,  # type: ignore[union-attr]
         time_window: int = cfg.betfair_rate_limit.time_window,  # type: ignore[union-attr]
     ):
         """
