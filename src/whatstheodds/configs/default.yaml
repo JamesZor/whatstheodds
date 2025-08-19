@@ -14,6 +14,13 @@ mapping:
     "54": "GB"  # Scottish Premiership
     "55": "GB"  # Scottish Championship
 
+
+betfair_rate_limit:
+  max_request: 90 # max 100 
+  time_window: 10 # time seconds
+
+
+
 search:
   primary_strategy: "ExactDateTeamSearch"
   extended_strategy: "ExtendDateTeamSearch" # null for none
@@ -29,6 +36,9 @@ search:
     minute: 0
     hour: 0
 
+betfair_downloader:
+  max_auth_attempts: 5
+  error_file_size: 1000 # less than 1KB
 
 
 betfair_football:

@@ -19,6 +19,7 @@ from .dataclasses import (
 )
 
 logger = logging.getLogger(__name__)
+from .rate_limiter import RateLimitedContext, betfair_rate_limiter
 
 
 class BetfairDownloadError(Exception):
@@ -44,7 +45,7 @@ class BetfairDownloader:
 
         # Track authentication state
         self._auth_attempts = 0
-        self._max_auth_attempts = 3
+        self._max_auth_attempts = self.cfg.betfair_downloader.max_auth_attempts
 
     def _validate_search_result(
         self, search_result: BetfairSearchSingleMarketResult
@@ -81,7 +82,9 @@ class BetfairDownloader:
 
         # Check file size - HTML error pages are typically small
         file_size = file_path.stat().st_size
-        if file_size < 1000:  # Less than 1KB is suspicious
+        if (
+            file_size < self.cfg.betfair_downloader.error_file_size
+        ):  # Less than 1KB is suspicious
             logger.warning(
                 f"File size too small ({file_size} bytes), likely an error page"
             )
@@ -204,10 +207,11 @@ class BetfairDownloader:
             )
 
             # Perform the download using the API
-            result = self.client.historic.download_file(
-                file_path=search_result.file,
-                store_directory=str(save_folder),
-            )
+            with RateLimitedContext():
+                result = self.client.historic.download_file(
+                    file_path=search_result.file,
+                    store_directory=str(save_folder),
+                )
 
             # Verify download success
             if not result:

@@ -11,6 +11,7 @@ from .dataclasses import (
     BetfairSearchResult,
     BetfairSearchSingleMarketResult,
 )
+from .rate_limiter import RateLimitedContext, betfair_rate_limiter
 
 logger = logging.getLogger(__name__)
 
@@ -70,20 +71,21 @@ class ExactDateTeamSearch(BaseSearchStrategy):
 
         try:
             # Request file list from API
-            file_list = self.client.historic.get_file_list(
-                sport=self.cfg.betfair_football.sport,
-                plan=self.cfg.betfair_football.plan,
-                from_day=str(from_date.day),
-                from_month=str(from_date.month),
-                from_year=str(from_date.year),
-                to_day=str(to_date.day),
-                to_month=str(to_date.month),
-                to_year=str(to_date.year),
-                market_types_collection=[market_type],
-                countries_collection=[search_request.country],
-                file_type_collection=list(self.cfg.betfair_football.file_type),
-                event_name=self.get_football_event_name(search_request),
-            )
+            with RateLimitedContext():
+                file_list = self.client.historic.get_file_list(
+                    sport=self.cfg.betfair_football.sport,
+                    plan=self.cfg.betfair_football.plan,
+                    from_day=str(from_date.day),
+                    from_month=str(from_date.month),
+                    from_year=str(from_date.year),
+                    to_day=str(to_date.day),
+                    to_month=str(to_date.month),
+                    to_year=str(to_date.year),
+                    market_types_collection=[market_type],
+                    countries_collection=[search_request.country],
+                    file_type_collection=list(self.cfg.betfair_football.file_type),
+                    event_name=self.get_football_event_name(search_request),
+                )
 
             # Log success and file count
             logger.info(
@@ -202,21 +204,22 @@ class ExtendDateTeamSearch(BaseSearchStrategy):
         from_date, to_date = self.get_date_interval(search_request.date)
 
         try:
-            # Request file list from API
-            file_list = self.client.historic.get_file_list(
-                sport=self.cfg.betfair_football.sport,
-                plan=self.cfg.betfair_football.plan,
-                from_day=str(from_date.day),
-                from_month=str(from_date.month),
-                from_year=str(from_date.year),
-                to_day=str(to_date.day),
-                to_month=str(to_date.month),
-                to_year=str(to_date.year),
-                market_types_collection=[market_type],
-                countries_collection=[search_request.country],
-                file_type_collection=list(self.cfg.betfair_football.file_type),
-                event_name=self.get_football_event_name(search_request),
-            )
+            with RateLimitedContext():
+                # Request file list from API
+                file_list = self.client.historic.get_file_list(
+                    sport=self.cfg.betfair_football.sport,
+                    plan=self.cfg.betfair_football.plan,
+                    from_day=str(from_date.day),
+                    from_month=str(from_date.month),
+                    from_year=str(from_date.year),
+                    to_day=str(to_date.day),
+                    to_month=str(to_date.month),
+                    to_year=str(to_date.year),
+                    market_types_collection=[market_type],
+                    countries_collection=[search_request.country],
+                    file_type_collection=list(self.cfg.betfair_football.file_type),
+                    event_name=self.get_football_event_name(search_request),
+                )
 
             # Log success and file count
             logger.info(

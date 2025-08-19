@@ -1,14 +1,17 @@
+import logging
 from datetime import datetime
 from pathlib import Path
 
 import pandas as pd
 
 from whatstheodds.betfair.downloader import BetfairDownloader, BetfairDownloadError
+from whatstheodds.betfair.rate_limiter import betfair_rate_limiter
 from whatstheodds.betfair.search_engine import BetfairSearchEngine, BetfairSearchRequest
 from whatstheodds.extractors import MatchExtractor
 from whatstheodds.mappers.match_mapper import MatchMapper
 from whatstheodds.processor.dataframe_processor import DataFrameProcessor
 
+logger = logging.getLevelName(__name__)
 ### configs
 MATCHES_FILE_PATH = Path(
     "/home/james/bet_project/football_data/scot_nostats_20_to_24/football_data_mixed_matches.csv"
@@ -35,6 +38,10 @@ def download_odds_from_df(matches: pd.DataFrame, dir_name: str) -> None:
     Here we call the processor class to save the reapir work
     """
     processor = DataFrameProcessor()
+    usage = betfair_rate_limiter.get_current_usage()
+    logger.info(
+        f"Starting downloads - Rate limiter usage: {usage['usage_percent']:.1f}%"
+    )
     processed_data, saved_files = processor.process_and_save(
         df=matches,
         run_name=dir_name,
@@ -42,6 +49,11 @@ def download_odds_from_df(matches: pd.DataFrame, dir_name: str) -> None:
         home_column="home_team",
         away_column="away_team",
         cleanup_on_success=True,
+    )
+
+    final_usage = betfair_rate_limiter.get_current_usage()
+    logger.info(
+        f"Downloads complete - Final rate limiter usage: {final_usage['usage_percent']:.1f}%"
     )
 
     print(saved_files)
@@ -67,6 +79,8 @@ def merge_repair_odds_and_save(
 if __name__ == "__main__":
     missing_odds_match_ids: pd.DataFrame = find_match_diff_odds(df, odds)
     print(missing_odds_match_ids.shape)
-    download_odds_from_df(missing_odds_match_ids, "repair_scot")
+
+    # Rate limit on downloads, thus need to rerun
+    download_odds_from_df(df, "scot_full")
 
     # TODO: run me on the other machine
