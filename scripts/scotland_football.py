@@ -11,7 +11,7 @@ from whatstheodds.extractors import MatchExtractor
 from whatstheodds.mappers.match_mapper import MatchMapper
 from whatstheodds.processor.dataframe_processor import DataFrameProcessor
 
-logger = logging.getLevelName(__name__)
+logger = logging.getLogger(__name__)
 ### configs
 MATCHES_FILE_PATH = Path(
     "/home/james/bet_project/football_data/scot_nostats_20_to_24/football_data_mixed_matches.csv"
