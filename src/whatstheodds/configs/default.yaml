@@ -40,7 +40,7 @@ betfair_downloader:
   max_auth_attempts: 3
   error_file_size: 500 # less than 1KB
   html_retries: 10
-  html_sleep_before_retry: 2 # seconds to sleep after a html
+  html_sleep_before_retry: 4 # seconds to sleep after a html
 
 
 betfair_football:
@@ -49,22 +49,40 @@ betfair_football:
   file_type: ["M"]
   markets: [
     # Half-time markets
-#      "FIRST_HALF_GOALS_05",
-#      "FIRST_HALF_GOALS_15",
-#      "FIRST_HALF_GOALS_25",
+      "FIRST_HALF_GOALS_05",
+      "FIRST_HALF_GOALS_15",
+      "FIRST_HALF_GOALS_25",
       # "HALF_TIME_SCORE",
-      "HALF_TIME",
+      # "HALF_TIME",
     # Full-time markets
 #      "OVER_UNDER_05",
-      "OVER_UNDER_15",
-      "OVER_UNDER_25",
-      "OVER_UNDER_35",
-      "CORRECT_SCORE", 
+      # "OVER_UNDER_15",
+      # "OVER_UNDER_25",
+      # "OVER_UNDER_35",
+      # "CORRECT_SCORE", 
             #   "CORRECT_SCORE2",
-      "MATCH_ODDS",
+      # "MATCH_ODDS",
       # "BOTH_TEAMS_TO_SCORE",
             ]
-
+#
+#   markets: [
+#     # Half-time markets
+# #      "FIRST_HALF_GOALS_05",
+# #      "FIRST_HALF_GOALS_15",
+# #      "FIRST_HALF_GOALS_25",
+#       # "HALF_TIME_SCORE",
+#       "HALF_TIME",
+#     # Full-time markets
+# #      "OVER_UNDER_05",
+#       "OVER_UNDER_15",
+#       "OVER_UNDER_25",
+#       "OVER_UNDER_35",
+#       "CORRECT_SCORE", 
+#             #   "CORRECT_SCORE2",
+#       "MATCH_ODDS",
+#       # "BOTH_TEAMS_TO_SCORE",
+#             ]
+#
 
 processing: # Extractor
   clean_data: true

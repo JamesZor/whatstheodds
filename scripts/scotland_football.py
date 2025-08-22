@@ -88,11 +88,51 @@ def merge_repair_odds_and_save(
     df_odds.to_csv(save_path)
 
 
+def join_ft_and_ht_odds():
+    odds_path_1 = Path(
+        "/home/james/bet_project/whatstheodds/output/scot_full_20250819_235516/odds_table.csv"
+    )
+    odds_path_2 = Path(
+        "/home/james/bet_project/whatstheodds/output/scot_half_20250822_172420/odds_table.csv"
+    )
+
+    odd1 = pd.read_csv(odds_path_1)
+    odd2 = pd.read_csv(odds_path_2)
+
+    print(odd1.head(5))
+
+    print(odd1.columns)
+    print("-" * 40)
+    print(odd2.head(5))
+
+    print(odd2.columns)
+    odd = pd.merge(
+        left=odd1,
+        right=odd2,
+        how="inner",
+        on=["sofa_match_id", "betfair_match_id"],
+        suffixes=("", "_dup"),  # Keep left columns as-is, mark right duplicates
+    )
+
+    # Drop the duplicate columns
+    columns_to_drop = [col for col in odd.columns if col.endswith("_dup")]
+    odd = odd.drop(columns=columns_to_drop)
+    print("-" * 40)
+    print(odd.head(5))
+
+    odd.to_csv("/home/james/bet_project/football_data/scot_nostats_20_to_24/odds.csv")
+
+
 if __name__ == "__main__":
     missing_odds_match_ids: pd.DataFrame = find_match_diff_odds(df, odds)
     print(missing_odds_match_ids.shape)
 
     # Rate limit on downloads, thus need to rerun
-    download_odds_from_df(df, "scot_full")
+    # download_odds_from_df(df, "scot_half")
+    """
+    re running to do first half
+
+    """
+    join_ft_and_ht_odds()
 
     # TODO: run me on the other machine
