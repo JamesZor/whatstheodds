@@ -3,8 +3,13 @@
 Market processors for different betting market types
 """
 
+from .both_teams_to_score import BothTeamsToScoreProcessor
 from .correct_score import CorrectScoreProcessor
-from .half_time import HalfTimeMatchOddsProcessor, HalfTimeOverUnderProcessor
+from .half_time import (
+    HalfTimeMatchOddsProcessor,
+    HalfTimeOverUnderProcessor,
+    HalfTimeScoreProcessor,
+)
 from .match_odds import MatchOddsProcessor
 from .over_under import OverUnderProcessor
 

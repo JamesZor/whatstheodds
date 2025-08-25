@@ -11,9 +11,11 @@ from omegaconf import DictConfig
 from whatstheodds.utils import load_config
 
 from .market_processors import (
+    BothTeamsToScoreProcessor,
     CorrectScoreProcessor,
     HalfTimeMatchOddsProcessor,
     HalfTimeOverUnderProcessor,
+    HalfTimeScoreProcessor,
     MatchOddsProcessor,
     OverUnderProcessor,
 )
@@ -34,8 +36,9 @@ class ProcessorFactory:
         # Match odds processors
         self._processors["MATCH_ODDS"] = MatchOddsProcessor(self.cfg)
         self._processors["HALF_TIME"] = HalfTimeMatchOddsProcessor(self.cfg)
-
         self._processors["CORRECT_SCORE"] = CorrectScoreProcessor(self.cfg)
+        self._processors["HALF_TIME_SCORE"] = HalfTimeScoreProcessor(self.cfg)
+        self._processors["BOTH_TEAMS_TO_SCORE"] = BothTeamsToScoreProcessor(self.cfg)
 
         # Over/Under processors for different goal lines
         goal_lines = ["0.5", "1.5", "2.5", "3.5", "4.5"]

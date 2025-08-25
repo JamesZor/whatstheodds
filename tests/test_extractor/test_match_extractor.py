@@ -5,7 +5,8 @@ from pathlib import Path
 
 import pandas as pd
 import pytest
-from extractors import MatchExtractor
+
+# from extractors import MatchExtractor
 from omegaconf import DictConfig, OmegaConf
 
 from whatstheodds.betfair.dataclasses import BetfairSearchRequest
@@ -103,7 +104,9 @@ def test_score_odd_extractions():
     )
 
     print(row)
-    cfg = load_config("configs", config_file="test_score_odds.yaml")
+    cfg = load_config("configs", config_file="test_both_teams_to_score.yaml")
+    print(OmegaConf.to_yaml(cfg))
+
     pipeline = PipelineCoordinator(cfg=cfg)
     # print(OmegaConf.to_yaml(cfg=cfg))
 
@@ -133,4 +136,4 @@ def test_score_odd_extractions():
     # print(extracted_data)
     odds_df = extracted_data["odds_data"]
 
-    print(odds_df.head(20))
+    print(odds_df)
