@@ -156,3 +156,52 @@ def test_six():
     print(df_odds.head(10))
 
     df_odds.to_csv("/home/james/bet_project/football_data/scot_nostats/odds.csv")
+
+
+def test_df_mapping_and_search():
+    mapper = MatchMapper()
+    search_engine = BetfairSearchEngine()
+    search_request_fails = []
+    search_results_fails = []
+
+    for idx, row in df.head(5).iterrows():
+        search_request = mapper.map_match_from_row(row)
+
+        mapper.map_match_from_row(
+            row2,
+            date_column=date_column,
+            match_id_column=match_id_column,
+            home_column=home_column,
+            away_column=away_column,
+            tournament_column=tournament_column,
+        )
+        if search_request is None:
+            search_request_fails.append(row["match_id"])
+            continue
+
+        search_results = search_engine.search_main(search_request)
+
+        if search_results is None:
+            search_results_fails.append(row["match_id"])
+            continue
+    row2 = df[df["match_id"] == 10387456].iloc[0]
+    row2
+
+    date_column: str = "match_date"
+    match_id_column: str = "match_id"
+    home_column: str = "home_team_slug"
+    away_column: str = "away_team_slug"
+    tournament_column: str = "tournament_id"
+
+    row2.columns
+
+    mapper.map_match_from_row(
+        row2,
+        date_column=date_column,
+        match_id_column=match_id_column,
+        home_column=home_column,
+        away_column=away_column,
+        tournament_column=tournament_column,
+    )
+    print(search_request_fails)
+    print(search_results_fails)

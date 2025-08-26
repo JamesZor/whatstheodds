@@ -62,3 +62,37 @@ def test_market_search():
 
     for key, value in results.missing_markets.items():
         print(value)
+
+
+def test_market_search_from_df():
+    print()
+    print("- - " * 50)
+    match_file_path = Path(
+        "/home/james/bet_project/football_data/scot_nostats_20_to_24/football_data_mixed_matches.csv"
+    )
+    mm = MatchMapper()
+    match_df = pd.read_csv(match_file_path)
+    # Convert date column once
+    match_df["match_date"] = pd.to_datetime(match_df["match_date"])
+    bse = BetfairSearchEngine()
+    print(OmegaConf.to_yaml(bse.cfg))
+
+    test_search = BetfairSearchRequest(
+        sofa_match_id=123456,
+        home="Liverpool",
+        away="Newcastle",
+        date=datetime(2022, 8, 30),
+        country="GB",
+    )
+    # market_type = "MATCH_ODDS"
+    # results = bse.search_strategies._search_per_market_type(test_search, market_type)
+
+    results = bse.search_main(test_search)
+
+    for key, value in results.valid_markets.items():
+        print(value)
+
+    print("=" * 20)
+
+    for key, value in results.missing_markets.items():
+        print(value)
