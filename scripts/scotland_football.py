@@ -128,11 +128,11 @@ if __name__ == "__main__":
     print(missing_odds_match_ids.shape)
 
     # Rate limit on downloads, thus need to rerun
-    # download_odds_from_df(df, "scot_half")
+    download_odds_from_df(df, "scot_btts_uo05ft_ht_cs")
     """
     re running to do first half
 
     """
-    join_ft_and_ht_odds()
+    # join_ft_and_ht_odds()
 
     # TODO: run me on the other machine
