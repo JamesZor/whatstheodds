@@ -11,7 +11,9 @@ from omegaconf import DictConfig
 
 from whatstheodds.betfair.api_client import setup_betfair_api_client
 from whatstheodds.betfair.dataclasses import BetfairSearchRequest, BetfairSearchResult
-from whatstheodds.betfair.downloader import BetfairDownloader
+
+# from whatstheodds.betfair.downloader import BetfairDownloader
+from whatstheodds.betfair.downloader_enhanced import BetfairDownloader
 from whatstheodds.betfair.search_engine import BetfairSearchEngine
 from whatstheodds.extractors import MatchExtractor
 from whatstheodds.mappers.match_mapper import MatchMapper
@@ -373,15 +375,27 @@ class PipelineCoordinator:
             self.stats["search_failures"] += 1
             return None
 
+    # new
     def _download_match_data(
         self, search_result: BetfairSearchResult
     ) -> Optional[Dict[str, Path]]:
-        """Download match data using BetfairDownloader"""
+        """Download match data with tracking"""
         try:
-            return self.downloader.download_odds(search_result)
+            # Use new tracking method
+            downloaded_files, market_status = (
+                self.downloader.download_odds_with_tracking(search_result)
+            )
+
+            # Update state manager with results
+            if hasattr(self, "state_manager"):
+                self.state_manager.update_match_downloads(
+                    sofa_id=self.current_sofa_id, market_results=market_status
+                )
+
+            return downloaded_files if downloaded_files else None
+
         except Exception as e:
             logger.error(f"Error downloading match data: {str(e)}")
-            self.stats["download_failures"] += 1
             return None
 
     def _extract_odds_data(self, match_id: str) -> Optional[Dict[str, Any]]:

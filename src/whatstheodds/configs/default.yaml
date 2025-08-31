@@ -41,7 +41,10 @@ betfair_downloader:
   error_file_size: 500 # less than 1KB
   html_retries: 10
   html_sleep_before_retry: 4 # seconds to sleep after a html
-
+  # added
+  track_market_failures: true
+  skip_existing_downloads: true
+  selective_retry_enabled: true
 
 betfair_football:
   sport: "Soccer"
@@ -54,7 +57,6 @@ betfair_football:
       # "FIRST_HALF_GOALS_15",
       # "FIRST_HALF_GOALS_25",
       "HALF_TIME_SCORE",
-      
   #### Full-time markets
       # "MATCH_ODDS",
       "OVER_UNDER_05",
