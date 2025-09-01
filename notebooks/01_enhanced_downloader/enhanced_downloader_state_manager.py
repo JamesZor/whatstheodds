@@ -13,7 +13,14 @@ from whatstheodds.extractors import MatchExtractor
 from whatstheodds.mappers.match_mapper import MatchMapper
 from whatstheodds.processor.dataframe_processor import DataFrameProcessor
 from whatstheodds.processor.state_manager import MatchState, ProcessingStateManager
+from whatstheodds.storage.hybrid_storage import HybridStorage  # Chunk 3
 
+##################################################
+#
+##################################################
+"""
+common parts for the set up 
+"""
 match_file_path = Path(
     "/home/james/bet_project/football_data/scot_nostats/football_data_mixed_matches.csv"
 )
@@ -23,6 +30,11 @@ df["match_date"] = pd.to_datetime(df["match_date"])
 # Since this is an older df - i use the home_team which is the slug
 df["home_team"] = df["home_team_slug"]
 df["away_team"] = df["away_team_slug"]
+
+
+##################################################
+# Chunk 1 and 2
+##################################################
 """
 Test one 
 Integration with Chunk 1 (State Manager):
@@ -78,3 +90,48 @@ File ~/bet_project/whatstheodds/src/whatstheodds/processor/state_manager.py:335,
     339 )
 """
 state_mgr.state_file
+
+##################################################
+##################################################
+"""
+test 3 
+adding chunk 3 package of the hybrid storage but 
+"""
+test_path = Path("/home/james/bet_project/whatstheodds/data/test")
+downloader = BetfairDownloader()  # Enhanced version
+mapper = MatchMapper()
+search_engine = BetfairSearchEngine()
+state_mgr = ProcessingStateManager(test_path, "run_name")  # chunk 3 version
+
+hybrid_storage = HybridStorage()
+
+
+row1 = df[
+    (df["home_team_slug"] == "celtic") & (df["away_team_slug"] == "rangers")
+].iloc[2]
+print(row1)
+search_request = mapper.map_match_from_row(row1)
+print(search_request)
+search_results = search_engine.search_main(search_request)  # type: ignore[arg-type]
+print(search_results)
+
+
+files, status = downloader.download_odds_with_tracking(search_results)
+print(files)
+print(status)
+
+# 1. Download with tracking (Chunk 2)
+files, status = downloader.download_odds_with_tracking(search_results)
+
+# 2. Update state (Chunk 1)
+state_mgr.update_match_downloads(sofa_id, status)
+
+
+sofa_id = row1.match_id
+
+# 3. Archive if successful (Chunk 3)
+if state_mgr.get_match_state(sofa_id).is_fully_successful():
+    archive_path = hybrid_storage.archive_match(
+        match_id=betfair_id, run_name=run_name, cleanup_temp=True
+    )
+    state_mgr.update_archive_path(sofa_id, str(archive_path))

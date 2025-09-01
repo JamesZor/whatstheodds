@@ -6,6 +6,12 @@ storage:
   data: "data"
   temp: "data/temp"
 
+# storage:
+#   temp_base_path: "data/temp"
+#   archive_base_path: "data/archive"
+#   archive_enabled: true
+#   cleanup_temp_on_archive: true
+
 mapping:
   mapping_dir: "mappings"
   active_files: ["scotland.json"]
