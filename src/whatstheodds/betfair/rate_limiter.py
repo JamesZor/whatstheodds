@@ -60,6 +60,7 @@ class BetfairHistoricalRateLimiter:
 
                 if wait_time > 0:
                     logger.info(f"Rate limit reached, waiting {wait_time:.2f}s")
+                    print(f"Rate limit reached, waiting {wait_time:.2f}s")
                     time.sleep(wait_time)
 
                     # Clean up again after waiting
@@ -69,6 +70,9 @@ class BetfairHistoricalRateLimiter:
 
             # Record this request
             self.requests.append(now)
+            print(
+                f"Request allowed. Current count: {len(self.requests)}/{self.max_requests}"
+            )
             logger.debug(
                 f"Request allowed. Current count: {len(self.requests)}/{self.max_requests}"
             )
