@@ -11,6 +11,7 @@ from whatstheodds.betfair.downloader_enhanced import (
 from whatstheodds.betfair.search_engine import BetfairSearchEngine, BetfairSearchRequest
 from whatstheodds.extractors import MatchExtractor
 from whatstheodds.mappers.match_mapper import MatchMapper
+from whatstheodds.pipeline.pipeline_coordinator_enhanced import PipelineCoordinator
 from whatstheodds.processor.dataframe_processor import DataFrameProcessor
 from whatstheodds.processor.state_manager import MatchState, ProcessingStateManager
 from whatstheodds.storage.hybrid_storage import HybridStorage  # Chunk 3
@@ -97,11 +98,11 @@ state_mgr.state_file
 test 3 
 adding chunk 3 package of the hybrid storage but 
 """
-test_path = Path("/home/james/bet_project/whatstheodds/data/test")
+test_path = Path("/home/james/bet_project/whatstheodds/data/test_a")
 downloader = BetfairDownloader()  # Enhanced version
 mapper = MatchMapper()
 search_engine = BetfairSearchEngine()
-state_mgr = ProcessingStateManager(test_path, "run_name")  # chunk 3 version
+state_mgr = ProcessingStateManager(test_path, "run_name_a")  # chunk 3 version
 
 hybrid_storage = HybridStorage()
 
@@ -109,6 +110,8 @@ hybrid_storage = HybridStorage()
 row1 = df[
     (df["home_team_slug"] == "celtic") & (df["away_team_slug"] == "rangers")
 ].iloc[3]
+print(row1)
+row1 = df.iloc[5]
 print(row1)
 search_request = mapper.map_match_from_row(row1)
 print(search_request)
@@ -121,13 +124,19 @@ print(files)
 print(status)
 
 # 1. Download with tracking (Chunk 2)
-files, status = downloader.download_odds_with_tracking(search_results)
-
 # 2. Update state (Chunk 1)
-state_mgr.update_match_downloads(sofa_id, status)
 
 
 sofa_id = row1.match_id
+sofa_id
+betfair_id = search_results.match_id
+run_name = "run_a"
+state_mgr.update_match_downloads(sofa_id, status)
+state_mgr.save_state()
+# chunk 2 - whats the difference between update_match_search and update_match_download
+state_mgr.update_match_search(sofa_id, search_results.match_id, search_results)
+# search_results is not serializable via json
+
 
 # 3. Archive if successful (Chunk 3)
 if state_mgr.get_match_state(sofa_id).is_fully_successful():
@@ -136,5 +145,40 @@ if state_mgr.get_match_state(sofa_id).is_fully_successful():
     )
     state_mgr.update_archive_path(sofa_id, str(archive_path))
 
-
+state_mgr.save_state()
 state_mgr.load_state()
+
+state_mgr.get_statistics()
+state_mgr.get_searchable_matches()
+"""
+[(11393373,
+  MatchState(sofa_id=11393373, betfair_id=None, search_result=None, markets={'HALF_TIME_SCORE': 'success', 'OVER_UNDER_05': 'success', 'BOTH_TEAMS_TO_SCORE': 'success'}, download_attempts=1, archive_path=None, last_updated='2025-09-01T21:45:26.799326', search_cached=False, search_error=None))]
+"""
+
+
+##################################################
+# Chuck 4
+##################################################
+
+
+test_path = Path("/home/james/bet_project/whatstheodds/data/test_b")
+downloader = BetfairDownloader()  # Enhanced version
+mapper = MatchMapper()
+search_engine = BetfairSearchEngine()
+state_mgr = ProcessingStateManager(test_path, "run_name_a")  # chunk 3 version
+hybrid_storage = HybridStorage()
+coordinator = PipelineCoordinator(tmp_manager=hybrid_storage)
+
+
+####
+
+row1 = df.iloc[69]
+print(row1)
+result = coordinator.process_from_row_with_state(
+    row=row1, state_manager=state_mgr, archive_on_success=True
+)
+# Smart retry using ALL enhancements
+retry_results = coordinator.retry_failed_matches(
+    state_manager=state_mgr  # Uses cached searches!
+)
+print(result)

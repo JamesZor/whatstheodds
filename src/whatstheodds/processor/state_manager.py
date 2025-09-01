@@ -71,14 +71,14 @@ class MatchState:
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for JSON serialization"""
         return {
-            "sofa_id": self.sofa_id,
-            "betfair_id": self.betfair_id,
+            "sofa_id": int(self.sofa_id),
+            "betfair_id": int(self.betfair_id),
             "search_result": self.search_result,
             "markets": self.markets,
-            "download_attempts": self.download_attempts,
+            "download_attempts": int(self.download_attempts),
             "archive_path": self.archive_path,
             "last_updated": self.last_updated,
-            "search_cached": self.search_cached,
+            "search_cached": bool(self.search_cached),
             "search_error": self.search_error,
         }
 
@@ -173,7 +173,7 @@ class ProcessingStateManager:
         state.last_updated = datetime.now().isoformat()
 
     def update_match_downloads(
-        self, sofa_id: int, market_results: Dict[str, str]
+        self, sofa_id: int, betfair_id: int, market_results: Dict[str, str]
     ) -> None:
         """
         Update market download status
@@ -182,6 +182,8 @@ class ProcessingStateManager:
             sofa_id: Sofa match ID
             market_results: Dict of market_type -> status ("success"/"failed"/"not_attempted")
         """
+        # TODO: - add search results into MatchState, Note need to be json friendly
+
         if sofa_id not in self.processing_state:
             self.processing_state[sofa_id] = MatchState(sofa_id=sofa_id)
 
