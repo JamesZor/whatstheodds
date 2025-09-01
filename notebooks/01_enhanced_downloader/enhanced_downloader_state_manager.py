@@ -108,7 +108,7 @@ hybrid_storage = HybridStorage()
 
 row1 = df[
     (df["home_team_slug"] == "celtic") & (df["away_team_slug"] == "rangers")
-].iloc[2]
+].iloc[3]
 print(row1)
 search_request = mapper.map_match_from_row(row1)
 print(search_request)
@@ -135,3 +135,6 @@ if state_mgr.get_match_state(sofa_id).is_fully_successful():
         match_id=betfair_id, run_name=run_name, cleanup_temp=True
     )
     state_mgr.update_archive_path(sofa_id, str(archive_path))
+
+
+state_mgr.load_state()
