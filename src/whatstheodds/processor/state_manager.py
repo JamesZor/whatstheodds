@@ -68,12 +68,48 @@ class MatchState:
         """Check if match needs retry based on failures and attempt count"""
         return self.has_failures() and self.download_attempts < max_attempts
 
+    # def to_dict(self) -> Dict[str, Any]:
+    #     """Convert to dictionary for JSON serialization"""
+    #     return {
+    #         "sofa_id": int(self.sofa_id),
+    #         "betfair_id": self.betfair_id,
+    #         "search_result": self.search_result,
+    #         "markets": self.markets,
+    #         "download_attempts": int(self.download_attempts),
+    #         "archive_path": self.archive_path,
+    #         "last_updated": self.last_updated,
+    #         "search_cached": bool(self.search_cached),
+    #         "search_error": self.search_error,
+    #     }
+    #
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for JSON serialization"""
+
+        # Handle search_result serialization
+        search_result_dict = None
+        if self.search_result is not None:
+            if isinstance(self.search_result, dict):
+                # Handle nested objects in dictionary
+                search_result_dict = {}
+                for key, value in self.search_result.items():
+                    if hasattr(value, "to_dict"):
+                        search_result_dict[key] = value.to_dict()
+                    elif hasattr(value, "__dict__"):
+                        search_result_dict[key] = value.__dict__
+                    else:
+                        search_result_dict[key] = value
+            elif hasattr(self.search_result, "to_dict"):
+                search_result_dict = self.search_result.to_dict()
+            elif hasattr(self.search_result, "__dict__"):
+                search_result_dict = self.search_result.__dict__
+            else:
+                # Fallback - try to convert to string
+                search_result_dict = str(self.search_result)
+
         return {
             "sofa_id": int(self.sofa_id),
             "betfair_id": self.betfair_id,
-            "search_result": self.search_result,
+            "search_result": search_result_dict,  # Now properly serialized
             "markets": self.markets,
             "download_attempts": int(self.download_attempts),
             "archive_path": self.archive_path,

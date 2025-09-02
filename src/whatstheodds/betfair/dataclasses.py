@@ -32,6 +32,17 @@ class BetfairSearchSingleMarketResult:
     market_id: Optional[str] = None
     error: Optional[str] = None
 
+    def to_dict(self) -> dict:
+        """Convert to dictionary for JSON serialization"""
+        return {
+            "strategy_used": self.strategy_used,
+            "market_type": self.market_type,
+            "file": self.file,
+            "match_id": self.match_id,
+            "market_id": self.market_id,
+            "error": self.error,
+        }
+
     @classmethod
     def from_path_string(cls, file: str, strategy_used_name: str, market_type: str):
         file_name_split: List[str] = file.split("/")
@@ -46,7 +57,8 @@ class BetfairSearchSingleMarketResult:
         )
 
     def toJSON(self):
-        return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)
+        """Legacy method - use to_dict() instead"""
+        return json.dumps(self.to_dict(), sort_keys=True, indent=4)
 
 
 @dataclass

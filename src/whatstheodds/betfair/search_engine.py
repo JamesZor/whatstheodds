@@ -1,8 +1,10 @@
 import logging
+import time
 from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union
 
 import betfairlightweight
 from omegaconf import DictConfig
+from tqdm import tqdm
 
 from whatstheodds.utils import load_config
 
@@ -99,7 +101,6 @@ class BetfairSearchEngine:
         """
         return self.search_strategy.search(search_request)
 
-    # TODO: add retry
     def search_main(self, search_request: BetfairSearchRequest) -> BetfairSearchResult:
         """
         Main search method that tries initial search and retries failed ones with extended strategy
@@ -130,6 +131,6 @@ class BetfairSearchEngine:
                         logger.warning(
                             f"Extended search failed for {result.market_type}: {str(e)}"
                         )
-                        # Keep the original failed result
 
+                # Keep the original failed result
         return BetfairSearchResult.from_results_list(search_results)  # type: ignore[no-any-return]

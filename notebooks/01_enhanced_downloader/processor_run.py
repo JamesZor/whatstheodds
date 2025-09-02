@@ -23,11 +23,14 @@ df["home_team"] = df["home_team_slug"]
 df["away_team"] = df["away_team_slug"]
 
 
-matches_df = df[0:10]
-matches_df
+matches_df = df[200:205]
+print(matches_df)
 mm = MatchMapper()
-mm.map_match_from_row(matches_df.iloc[1])
-matches_df.iloc[1]
+
+for idx, row in matches_df.iterrows():
+    print(f"home: {row.home_team} v {row.away_team}")
+    print(mm.map_match_from_row(row))
+
 
 # 1. Simple processing with everything
 processor = DataFrameProcessor()
