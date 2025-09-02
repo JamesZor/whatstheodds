@@ -99,6 +99,7 @@ class BetfairSearchEngine:
         """
         return self.search_strategy.search(search_request)
 
+    # TODO: add retry
     def search_main(self, search_request: BetfairSearchRequest) -> BetfairSearchResult:
         """
         Main search method that tries initial search and retries failed ones with extended strategy

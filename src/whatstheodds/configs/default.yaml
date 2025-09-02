@@ -45,8 +45,9 @@ search:
 betfair_downloader:
   max_auth_attempts: 3
   error_file_size: 500 # less than 1KB
-  html_retries: 10
-  html_sleep_before_retry: 4 # seconds to sleep after a html
+  max_retries: 3  # Number of main retry cycles
+  html_retries: 3  # Number of 302 retries per main cycle  
+  html_sleep_before_retry: 2  # Sleep between retries
   # added
   track_market_failures: true
   skip_existing_downloads: true
@@ -58,19 +59,19 @@ betfair_football:
   file_type: ["M"]
   markets: [
     # Half-time markets
-      # "HALF_TIME",
-      # "FIRST_HALF_GOALS_05",
-      # "FIRST_HALF_GOALS_15",
-      # "FIRST_HALF_GOALS_25",
-      "HALF_TIME_SCORE",
+      #  "HALF_TIME",
+      #  "FIRST_HALF_GOALS_05",
+      #  "FIRST_HALF_GOALS_15",
+      #  "FIRST_HALF_GOALS_25",
+      # "HALF_TIME_SCORE",
   #### Full-time markets
-      # "MATCH_ODDS",
-      "OVER_UNDER_05",
-      # "OVER_UNDER_15",
-      # "OVER_UNDER_25",
-      # "OVER_UNDER_35",
-      # "CORRECT_SCORE", 
-      "BOTH_TEAMS_TO_SCORE",
+       "MATCH_ODDS",
+      # "OVER_UNDER_05",
+       # "OVER_UNDER_15",
+       # "OVER_UNDER_25",
+       # "OVER_UNDER_35",
+       "CORRECT_SCORE", 
+      # "BOTH_TEAMS_TO_SCORE",
             ]
 #
             #   "CORRECT_SCORE2",
@@ -79,6 +80,7 @@ processing: # Extractor
   clean_data: true
   pre_kickoff_mins: 10      # Data from 10 mins before kickoff
   post_kickoff_mins: 120     # Data up to 100 mins after kickoff  
+  apply_forward_fill: false  # apppy ffill or not - ltp 
   resample_to_mins: true     # Resample to 1-minute intervals
   clip_extreme_odds: true    # Remove unrealistic odds
   min_odds: 1.01
@@ -88,3 +90,5 @@ processing: # Extractor
 
 
 
+processor:
+  output_dir: "/home/james/bet_project/"

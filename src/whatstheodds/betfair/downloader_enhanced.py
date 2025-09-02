@@ -198,9 +198,64 @@ class BetfairDownloader:
             logger.warning(f"Download attempt failed: {e}")
             return None
 
+    # TEST: - Can remove this once confirmed it works
+    # def _download_with_retries(self, search_result, save_folder, retry_on_html):
+    #     """Download with built-in retry logic"""
+    #
+    #     # Attempt 1: Normal download
+    #     result = self._attempt_download(search_result, save_folder)
+    #     if result:
+    #         return result
+    #
+    #     if not retry_on_html:
+    #         raise BetfairDownloadError(
+    #             f"Download failed for {search_result.market_type}"
+    #         )
+    #
+    #     # Attempt 2: Simple retry (for 302s)
+    #     # Get config values with sensible defaults
+    #     max_302_retries = getattr(self.cfg, "betfair_downloader", {}).get(
+    #         "html_retries", 3
+    #     )
+    #     sleep_between_retries = getattr(self.cfg, "betfair_downloader", {}).get(
+    #         "html_sleep_before_retry", 3
+    #     )
+    #
+    #     for attempt in range(max_302_retries):
+    #         logger.info(
+    #             f"302 retry attempt {attempt + 1}/{max_302_retries} for {search_result.market_type}"
+    #         )
+    #         time.sleep(sleep_between_retries)
+    #
+    #         result = self._attempt_download(search_result, save_folder)
+    #         if result:
+    #             logger.info(
+    #                 f"302 retry worked on attempt {attempt + 1} for {search_result.market_type}"
+    #             )
+    #             return result
+    #
+    #         logger.warning(
+    #             f"302 retry attempt {attempt + 1} failed for {search_result.market_type}"
+    #         )
+    #
+    #     # Attempt 3: Reauthenticate and retry
+    #     logger.warning(
+    #         f"Simple retry failed, reauthenticating for {search_result.market_type}"
+    #     )
+    #     if self._reauthenticate():
+    #         result = self._attempt_download(search_result, save_folder)
+    #         if result:
+    #             logger.info(f"✅ Auth retry worked for {search_result.market_type}")
+    #             return result
+    #
+    #     # All attempts failed
+    #     raise BetfairDownloadError(
+    #         f"All retry attempts failed for {search_result.market_type}"
+    #     )
+    #
+
     def _download_with_retries(self, search_result, save_folder, retry_on_html):
         """Download with built-in retry logic"""
-
         # Attempt 1: Normal download
         result = self._attempt_download(search_result, save_folder)
         if result:
@@ -211,8 +266,8 @@ class BetfairDownloader:
                 f"Download failed for {search_result.market_type}"
             )
 
-        # Attempt 2: Simple retry (for 302s)
         # Get config values with sensible defaults
+        max_retries = getattr(self.cfg, "betfair_downloader", {}).get("max_retries", 2)
         max_302_retries = getattr(self.cfg, "betfair_downloader", {}).get(
             "html_retries", 3
         )
@@ -220,36 +275,50 @@ class BetfairDownloader:
             "html_sleep_before_retry", 3
         )
 
-        for attempt in range(max_302_retries):
+        # Main retry loop
+        for main_attempt in range(max_retries):
             logger.info(
-                f"302 retry attempt {attempt + 1}/{max_302_retries} for {search_result.market_type}"
+                f"Main retry attempt {main_attempt + 1}/{max_retries} for {search_result.market_type}"
             )
-            time.sleep(sleep_between_retries)
 
-            result = self._attempt_download(search_result, save_folder)
-            if result:
+            # Inner 302 retry loop
+            for attempt in range(max_302_retries):
                 logger.info(
-                    f"302 retry worked on attempt {attempt + 1} for {search_result.market_type}"
+                    f"302 retry attempt {attempt + 1}/{max_302_retries} (main attempt {main_attempt + 1}) for {search_result.market_type}"
                 )
-                return result
+                time.sleep(sleep_between_retries)
+                result = self._attempt_download(search_result, save_folder)
+                if result:
+                    logger.info(
+                        f"✅ 302 retry worked on attempt {attempt + 1} (main attempt {main_attempt + 1}) for {search_result.market_type}"
+                    )
+                    return result
+                logger.warning(
+                    f"302 retry attempt {attempt + 1} failed (main attempt {main_attempt + 1}) for {search_result.market_type}"
+                )
 
+            # After 302 retries exhausted, try reauthenticate
             logger.warning(
-                f"302 retry attempt {attempt + 1} failed for {search_result.market_type}"
+                f"302 retries exhausted, reauthenticating (main attempt {main_attempt + 1}) for {search_result.market_type}"
             )
+            if self._reauthenticate():
+                result = self._attempt_download(search_result, save_folder)
+                if result:
+                    logger.info(
+                        f"✅ Auth retry worked (main attempt {main_attempt + 1}) for {search_result.market_type}"
+                    )
+                    return result
+                logger.warning(
+                    f"Auth retry failed (main attempt {main_attempt + 1}) for {search_result.market_type}"
+                )
+            else:
+                logger.error(
+                    f"Reauthentication failed (main attempt {main_attempt + 1}) for {search_result.market_type}"
+                )
 
-        # Attempt 3: Reauthenticate and retry
-        logger.warning(
-            f"Simple retry failed, reauthenticating for {search_result.market_type}"
-        )
-        if self._reauthenticate():
-            result = self._attempt_download(search_result, save_folder)
-            if result:
-                logger.info(f"✅ Auth retry worked for {search_result.market_type}")
-                return result
-
-        # All attempts failed
+        # All retries exhausted
         raise BetfairDownloadError(
-            f"All retry attempts failed for {search_result.market_type}"
+            f"All retry attempts exhausted for {search_result.market_type}"
         )
 
     def _download_single_market(self, search_result, retry_on_html=True):

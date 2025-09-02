@@ -1,3 +1,4 @@
+import json
 import logging
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -44,6 +45,9 @@ class BetfairSearchSingleMarketResult:
             match_id=match_id,
         )
 
+    def toJSON(self):
+        return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)
+
 
 @dataclass
 class BetfairSearchResult:
@@ -80,6 +84,9 @@ class BetfairSearchResult:
             valid_markets=valid_markets,
             missing_markets=missing_markets,
         )
+
+    def toJSON(self):
+        return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)
 
 
 @dataclass

@@ -26,6 +26,10 @@ class OddsDataProcessor:
         self.post_kickoff_mins = config.get("processing", {}).get(
             "post_kickoff_mins", 100
         )
+        self.apply_forward_fill = config.get("processing", {}).get(
+            "apply_forward_fill", False
+        )
+
         self.resample_to_mins = config.get("processing", {}).get(
             "resample_to_mins", True
         )
@@ -58,7 +62,8 @@ class OddsDataProcessor:
             df["timestamp"] = pd.to_datetime(df["timestamp"])
 
         # Forward fill missing values
-        df = df.ffill()
+        if self.apply_forward_fill:
+            df = df.ffill()
 
         # Clip extreme odds if configured
         if self.clip_extreme_odds:

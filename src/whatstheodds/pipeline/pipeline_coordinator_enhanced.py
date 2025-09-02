@@ -112,8 +112,8 @@ class PipelineCoordinator:
         state_manager: ProcessingStateManager,
         date_column: str = "match_date",
         match_id_column: str = "match_id",
-        home_column: str = "home_team_slug",
-        away_column: str = "away_team_slug",
+        home_column: str = "home_team",
+        away_column: str = "away_team",
         tournament_column: str = "tournament_id",
         cleanup_on_success: bool = False,
         cleanup_on_failure: bool = False,
@@ -222,7 +222,9 @@ class PipelineCoordinator:
             )
 
             # Update state with download status
-            state_manager.update_match_downloads(sofa_match_id, market_status)
+            state_manager.update_match_downloads(
+                sofa_match_id, search_result.match_id, market_status
+            )
 
             if not downloaded_files:
                 return self._create_failed_result(

@@ -72,7 +72,7 @@ class MatchState:
         """Convert to dictionary for JSON serialization"""
         return {
             "sofa_id": int(self.sofa_id),
-            "betfair_id": int(self.betfair_id),
+            "betfair_id": self.betfair_id,
             "search_result": self.search_result,
             "markets": self.markets,
             "download_attempts": int(self.download_attempts),
