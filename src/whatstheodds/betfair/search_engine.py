@@ -134,4 +134,4 @@ class BetfairSearchEngine:
                         )
 
                 # Keep the original failed result
-        return BetfairSearchResult.from_results_list(search_results)  # type: ignore[no-any-return]
+        return BetfairSearchResult.from_results_list(search_results, search_request)  # type: ignore[no-any-return]

@@ -72,7 +72,16 @@ class BetfairSearchSingleMarketResult:
 
 @dataclass
 class BetfairSearchResult:
-    match_id: Optional[str] = None
+    # added from search request
+    request: Optional[BetfairSearchRequest] = None
+
+    sofa_match_id: Optional[int] = None
+    home: Optional[str] = None
+    away: Optional[str] = None
+    date: Optional[str] = None
+    country: Optional[str] = None
+
+    match_id: Optional[int] = None
     valid_markets: Dict[str, BetfairSearchSingleMarketResult] = field(
         default_factory=dict
     )
@@ -81,7 +90,11 @@ class BetfairSearchResult:
     )
 
     @classmethod
-    def from_results_list(cls, results: List[BetfairSearchSingleMarketResult]):
+    def from_results_list(
+        cls,
+        results: List[BetfairSearchSingleMarketResult],
+        search_request: BetfairSearchRequest,
+    ):
         # Create markets dict mapping market_type to result
         valid_markets = {
             result.market_type: result
@@ -100,8 +113,26 @@ class BetfairSearchResult:
                 match_id = result.match_id
                 break
 
+        sofa_id = None
+        home = None
+        away = None
+        date = None
+        country = None
+
+        if search_request:
+            sofa_id = int(search_request.sofa_match_id)
+            home = search_request.home
+            away = search_request.away
+            date = str(search_request.date)
+            country = search_request.country
+
         return cls(
-            match_id=match_id,
+            sofa_match_id=sofa_id,
+            home=home,
+            away=away,
+            date=date,
+            country=country,
+            match_id=int(match_id) if match_id is not None else None,
             valid_markets=valid_markets,
             missing_markets=missing_markets,
         )
