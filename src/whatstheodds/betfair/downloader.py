@@ -1,6 +1,7 @@
 import bz2
 import json
 import logging
+import threading  # Make sure to import threading at the top of the file
 import time
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union
@@ -49,6 +50,8 @@ class BetfairDownloader:
         # Track authentication state
         self._auth_attempts = 0
         self._max_auth_attempts = self.cfg.betfair_downloader.max_auth_attempts
+
+        self._auth_lock = threading.Lock()
 
     def _validate_search_result(
         self, search_result: BetfairSearchSingleMarketResult
@@ -141,41 +144,56 @@ class BetfairDownloader:
 
     def _reauthenticate(self) -> bool:
         """
-        Attempt to reauthenticate with Betfair
+        Attempt to reauthenticate with Betfair in a thread-safe manner.
 
         Returns:
             True if successful, False otherwise
         """
-        if self._auth_attempts >= self._max_auth_attempts:
-            logger.error(
-                f"Max authentication attempts ({self._max_auth_attempts}) reached"
-            )
-            return False
+        # Acquire the lock. If another thread is already re-authenticating,
+        # this thread will wait here until the lock is released.
+        with self._auth_lock:
+            # After acquiring the lock, it's possible the session was already
+            # refreshed by the thread that held the lock before us.
+            # We can do a quick check to see if re-authentication is still needed.
+            # A simple way is to check the login time if available.
+            if hasattr(self.client, "_login_time") and self.client._login_time:
+                # If login was less than 60 seconds ago, assume it's fresh
+                if time.time() - self.client._login_time < 30:
+                    logger.info(
+                        "Session already refreshed by another thread. Skipping re-authentication."
+                    )
+                    return True
 
-        try:
-            self._auth_attempts += 1
-            logger.info(
-                f"Reauthenticating (attempt {self._auth_attempts}/{self._max_auth_attempts})"
-            )
+            if self._auth_attempts >= self._max_auth_attempts:
+                logger.error(
+                    f"Max authentication attempts ({self._max_auth_attempts}) reached"
+                )
+                return False
 
-            # Logout first if there's an existing session
-            if hasattr(self.client, "session_token") and self.client.session_token:
-                try:
-                    self.client.logout()
-                except:
-                    pass  # Ignore logout errors
+            try:
+                self._auth_attempts += 1
+                logger.info(
+                    f"Re-authenticating (attempt {self._auth_attempts}/{self._max_auth_attempts})"
+                )
 
-            # Re-login
-            self.client.login_interactive()
-            logger.info("Successfully reauthenticated")
+                # Logout first if there's an existing session
+                if hasattr(self.client, "session_token") and self.client.session_token:
+                    try:
+                        self.client.logout()
+                    except:
+                        pass  # Ignore logout errors
 
-            # Reset counter on success
-            self._auth_attempts = 0
-            return True
+                # Re-login
+                self.client.login_interactive()
+                logger.info("Successfully reauthenticated")
 
-        except Exception as e:
-            logger.error(f"Reauthentication failed: {str(e)}")
-            return False
+                # Reset counter on success
+                self._auth_attempts = 0
+                return True
+
+            except Exception as e:
+                logger.error(f"Reauthentication failed: {str(e)}")
+                return False
 
     def _attempt_download(self, search_result, save_folder):
         """Single download attempt - returns Path if successful, None if failed"""
