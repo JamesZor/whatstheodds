@@ -11,6 +11,11 @@ mapping:
     "54": "GB"  # Scottish Premiership
     "55": "GB"  # Scottish Championship
 
+grabber:
+  threaded: true #if the processing is thread
+  max_number_of_works: 20
+  checkpoint_interval: 100
+
 
 search:
   primary_strategy: "ExactDateTeamSearch"

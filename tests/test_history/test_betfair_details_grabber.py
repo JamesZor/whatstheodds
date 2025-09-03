@@ -101,4 +101,4 @@ class TestBetfairDetailsGrabber:
 
         logging.info(search_result)
 
-        logging.info(search_result.toJSON())
+        # logging.info(search_result.toJSON())
