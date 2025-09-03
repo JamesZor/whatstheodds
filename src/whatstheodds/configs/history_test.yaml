@@ -34,16 +34,16 @@ betfair_football:
   markets: [
     # Half-time markets
        "HALF_TIME",
-       # "FIRST_HALF_GOALS_05",
-       # "FIRST_HALF_GOALS_15",
-       # "FIRST_HALF_GOALS_25",
-       # "HALF_TIME_SCORE",
+       "FIRST_HALF_GOALS_05",
+       "FIRST_HALF_GOALS_15",
+       "FIRST_HALF_GOALS_25",
+       "HALF_TIME_SCORE",
   #### Full-time markets
       "MATCH_ODDS",
-      # "OVER_UNDER_05",
-      # "OVER_UNDER_15",
-      # "OVER_UNDER_25",
-      # "OVER_UNDER_35",
-      # "CORRECT_SCORE", 
-      # "BOTH_TEAMS_TO_SCORE",
+      "OVER_UNDER_05",
+      "OVER_UNDER_15",
+      "OVER_UNDER_25",
+      "OVER_UNDER_35",
+      "CORRECT_SCORE", 
+      "BOTH_TEAMS_TO_SCORE",
             ]
