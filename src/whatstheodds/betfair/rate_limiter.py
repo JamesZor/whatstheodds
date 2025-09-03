@@ -70,9 +70,9 @@ class BetfairHistoricalRateLimiter:
 
             # Record this request
             self.requests.append(now)
-            print(
-                f"Request allowed. Current count: {len(self.requests)}/{self.max_requests}"
-            )
+            # print(
+            #     f"Request allowed. Current count: {len(self.requests)}/{self.max_requests}"
+            # )
             logger.debug(
                 f"Request allowed. Current count: {len(self.requests)}/{self.max_requests}"
             )

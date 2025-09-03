@@ -106,6 +106,7 @@ class BetfairSearchEngine:
         Main search method that tries initial search and retries failed ones with extended strategy
         """
         # First search using primary strategy
+        logger.info(f"searching markets: {self.cfg.betfair_football.markets}.")
         search_results = self.search_strategy.search_over_config_markets(search_request)
 
         # If we have an extended search strategy, retry failed searches

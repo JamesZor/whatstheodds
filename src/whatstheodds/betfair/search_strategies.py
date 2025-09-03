@@ -1,10 +1,12 @@
 import logging
+import time
 from abc import ABC, abstractmethod
 from datetime import datetime, timedelta
 from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union
 
 import betfairlightweight
 from omegaconf import DictConfig
+from tqdm import tqdm
 
 from .dataclasses import (
     BetfairSearchRequest,
@@ -132,15 +134,25 @@ class ExactDateTeamSearch(BaseSearchStrategy):
     def search_over_config_markets(
         self, search_request: BetfairSearchRequest
     ) -> List[BetfairSearchSingleMarketResult]:
-
         results: List[BetfairSearchSingleMarketResult] = []
+        markets = list(self.cfg.betfair_football.markets)
 
-        for market_type in list(self.cfg.betfair_football.markets):
+        progress_bar = tqdm(markets, desc="Searching markets")
+        for market_type in progress_bar:
+            progress_bar.set_postfix({"current": market_type})
+            logger.info(f"searching: {market_type}..")
+            time_search_start = time.time()
+
             results.append(
                 self._search_per_market_type(
                     search_request=search_request, market_type=market_type
                 )
             )
+
+            time_search_end = time.time()
+            duration = time_search_end - time_search_start
+            logger.info(f"completed: {market_type} in {duration:.2f} seconds")
+            progress_bar.set_postfix({"last_duration": f"{duration:.2f}s"})
 
         return results
 
@@ -270,11 +282,13 @@ class ExtendDateTeamSearch(BaseSearchStrategy):
         results: List[BetfairSearchSingleMarketResult] = []
 
         for market_type in list(self.cfg.betfair_football.markets):
+            logger.info(f"searching: {market_type}..")
             results.append(
                 self._search_per_market_type(
                     search_request=search_request, market_type=market_type
                 )
             )
+            logger.info(f"found: {market_type}.")
 
         return results
 

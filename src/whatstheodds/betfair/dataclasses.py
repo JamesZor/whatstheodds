@@ -18,6 +18,15 @@ class BetfairSearchRequest:
     date: datetime
     country: str
 
+    def to_dict(self) -> Dict:
+        return {
+            "sofa_match_id": int(self.sofa_match_id),
+            "home": self.home,
+            "away": self.away,
+            "data": str(self.date),
+            "country": self.country,
+        }
+
 
 @dataclass
 class BetfairSearchSingleMarketResult:

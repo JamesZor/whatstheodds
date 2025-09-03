@@ -104,6 +104,15 @@ def setup_betfair_api_client() -> betfairlightweight.APIClient:
             app_key=credentials["APP_KEY"],
         )
 
+        # CRITICAL: Set timeouts on the historic endpoint after creation
+        # This is the key fix - betfairlightweight doesn't expose these in __init__
+        betfair.historic.connect_timeout = 60  # Connection timeout: 30 seconds
+        betfair.historic.read_timeout = 300  # Read timeout: 5 minutes (300 seconds)
+
+        # Also set timeouts on other endpoints that might be slow
+        betfair.betting.connect_timeout = 60
+        betfair.betting.read_timeout = 120
+
         # Verify connection by attempting to login
         # This ensures we have valid credentials and can connect
         # trading.login()
