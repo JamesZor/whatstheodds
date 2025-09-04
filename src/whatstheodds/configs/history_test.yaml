@@ -13,7 +13,7 @@ mapping:
 
 grabber:
   threaded: true #if the processing is thread
-  max_number_of_works: 20
+  max_number_of_workers: 14
   checkpoint_interval: 100
 
 

@@ -22,7 +22,7 @@ mapping:
 
 
 betfair_rate_limit:
-  max_request: 90 # max 100 
+  max_request: 99 # max 100 
   time_window: 10 # time seconds
 
 

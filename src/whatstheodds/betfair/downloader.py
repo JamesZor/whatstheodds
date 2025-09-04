@@ -126,7 +126,7 @@ class BetfairDownloader:
 
         except (IOError, UnicodeDecodeError) as e:
             # File might not be compressed or might be corrupted
-            logger.error(f"Error reading file {file_path}: {str(e)}")
+            logger.info(f"Error reading file {file_path}: {str(e)}")
 
             # Check if it's uncompressed HTML
             try:
@@ -135,7 +135,7 @@ class BetfairDownloader:
                     if any(
                         marker in content.lower() for marker in ["<!doctype", "<html"]
                     ):
-                        logger.error("File is uncompressed HTML")
+                        logger.info("File is uncompressed HTML")
                         return False
             except:
                 pass
@@ -158,7 +158,7 @@ class BetfairDownloader:
             # A simple way is to check the login time if available.
             if hasattr(self.client, "_login_time") and self.client._login_time:
                 # If login was less than 60 seconds ago, assume it's fresh
-                if time.time() - self.client._login_time < 30:
+                if time.time() - self.client._login_time < 60:
                     logger.info(
                         "Session already refreshed by another thread. Skipping re-authentication."
                     )
