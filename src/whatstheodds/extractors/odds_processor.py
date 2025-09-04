@@ -105,9 +105,9 @@ class OddsDataProcessor:
             kickoff = kickoff.tz_localize(None)
 
         # Calculate time differences
-        df["seconds_to_kickoff"] = (kickoff - df["timestamp"]).dt.total_seconds()
+        # df["seconds_to_kickoff"] = (kickoff - df["timestamp"]).dt.total_seconds()
         df["minutes"] = (
-            -df["seconds_to_kickoff"] / 60
+            -(kickoff - df["timestamp"]).dt.total_seconds() / 60
         )  # Negative before, positive after kickoff
         df["minutes"] = df["minutes"].round().astype(int)
 

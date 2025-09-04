@@ -83,3 +83,6 @@ results = grabber.process_batch(
 )
 
 grabber.print_processing_summary(results)
+grabber.get_complete_matches(
+    Path("/home/james/bet_project/football_data/test/threaded_test_v2.json")
+)

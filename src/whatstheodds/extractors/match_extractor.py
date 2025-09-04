@@ -21,11 +21,6 @@ from .processor_factory import ProcessorFactory
 logger = logging.getLogger(__name__)
 
 
-# HACK:
-# 1 - Change config to cfg as cfg is used more commonly.
-# 2 - Update some of the classes init methods
-
-
 class MatchExtractor:
     """Extract and process odds data from Betfair match files"""
 
