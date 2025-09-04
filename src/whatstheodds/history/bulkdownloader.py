@@ -85,7 +85,7 @@ class BetfairBulkDownloader(BetfairDownloader):
         }
 
         # Track match-level results
-        self.match_results: Dict = {}
+        self.match_results = {}
 
         logger.info(
             f"BetfairBulkDownloader initialized with {max_workers} workers (file-level parallelism)"
