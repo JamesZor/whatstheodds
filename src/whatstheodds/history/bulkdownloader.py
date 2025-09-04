@@ -1,5 +1,6 @@
 import json
 import logging
+import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
@@ -13,7 +14,7 @@ from omegaconf import DictConfig
 from tqdm import tqdm
 
 from whatstheodds.betfair.downloader import BetfairDownloader
-from whatstheodds.betfair.rate_limiter import RateLimitedContext
+from whatstheodds.betfair.rate_limiter import RateLimitedContext, betfair_rate_limiter
 
 logger = logging.getLogger(__name__)
 
@@ -57,6 +58,7 @@ class BetfairBulkDownloader(BetfairDownloader):
         cfg: Optional[DictConfig] = None,
         max_workers: int = 8,
         checkpoint_interval: int = 50,
+        show_rate_limit_bar: bool = True,
     ):
         """
         Initialize bulk downloader
@@ -67,11 +69,13 @@ class BetfairBulkDownloader(BetfairDownloader):
             cfg: Configuration
             max_workers: Number of parallel download threads (default: 8)
             checkpoint_interval: Save progress every N files (default: 50)
+            show_rate_limit_bar: Show separate rate limit monitoring bar (default: True)
         """
         super().__init__(api_client, tmp_manager, cfg)
 
         self.max_workers = max_workers
         self.checkpoint_interval = checkpoint_interval
+        self.show_rate_limit_bar = show_rate_limit_bar
         self.results_lock = Lock()
 
         # Track download session
@@ -87,9 +91,74 @@ class BetfairBulkDownloader(BetfairDownloader):
         # Track match-level results
         self.match_results = {}
 
+        # Get rate limit info
+        rate_status = betfair_rate_limiter.get_current_usage()
         logger.info(
             f"BetfairBulkDownloader initialized with {max_workers} workers (file-level parallelism)"
         )
+        logger.info(
+            f"Rate limit: {rate_status['max_requests']} requests per {rate_status['time_window']}s"
+        )
+
+    # ========== Rate Limit Monitoring ==========
+
+    def _create_rate_limit_monitor(self, position: int = 1) -> Optional[tqdm]:
+        """
+        Create a separate progress bar for rate limit monitoring
+
+        Args:
+            position: Position of the bar (0 = top, 1 = below main bar)
+
+        Returns:
+            tqdm instance for rate limit monitoring or None if disabled
+        """
+        if not self.show_rate_limit_bar:
+            return None
+
+        rate_bar = tqdm(
+            total=100,
+            desc="Rate Limit",
+            position=position,
+            bar_format="{desc}: {percentage:3.0f}%|{bar}| {postfix}",
+            leave=False,
+            colour="yellow",
+        )
+
+        def update_rate_bar():
+            """Update rate limit bar with current status"""
+            while getattr(self, "_monitoring_active", True):
+                try:
+                    status = betfair_rate_limiter.get_current_usage()
+                    rate_bar.n = int(status["usage_percent"])
+
+                    # Color code based on usage
+                    if status["usage_percent"] > 90:
+                        rate_bar.colour = "red"
+                    elif status["usage_percent"] > 70:
+                        rate_bar.colour = "yellow"
+                    else:
+                        rate_bar.colour = "green"
+
+                    rate_bar.set_postfix(
+                        {
+                            "requests": f"{status['current_requests']}/{status['max_requests']}",
+                            "window": f"{status['time_window']}s",
+                            "available": status["max_requests"]
+                            - status["current_requests"],
+                        }
+                    )
+                    rate_bar.refresh()
+                except Exception:
+                    pass  # Ignore errors in monitoring thread
+                time.sleep(0.5)  # Update every 500ms
+            rate_bar.close()
+
+        # Start monitoring thread
+        self._monitoring_active = True
+        monitor_thread = threading.Thread(target=update_rate_bar, daemon=True)
+        monitor_thread.start()
+
+        return rate_bar
 
     # ========== Main Entry Point ==========
 
@@ -276,66 +345,106 @@ class BetfairBulkDownloader(BetfairDownloader):
         if checkpoint:
             file_results = checkpoint.get("file_results", {})
 
-        with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
-            # Submit all tasks
-            futures = {
-                executor.submit(self._download_single_file_task, task): task
-                for task in download_tasks
-            }
+        # Create rate limit monitor if enabled
+        rate_monitor = self._create_rate_limit_monitor(position=1)
 
-            # Process completed futures with progress bar
-            with tqdm(total=len(futures), desc="Downloading files") as pbar:
-                for future in as_completed(futures):
-                    task = futures[future]
+        try:
+            with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
+                # Submit all tasks
+                futures = {
+                    executor.submit(self._download_single_file_task, task): task
+                    for task in download_tasks
+                }
 
-                    try:
-                        # Get result with timeout
-                        file_result = future.result(timeout=300)
+                # Process completed futures with progress bar
+                # Position=0 for main bar if we have rate monitor
+                position = 0 if rate_monitor else None
+                with tqdm(
+                    total=len(futures), desc="Downloading files", position=position
+                ) as pbar:
+                    for future in as_completed(futures):
+                        task = futures[future]
 
-                        # Update file results
-                        file_results[task.file_path] = file_result
+                        try:
+                            # Get result with timeout
+                            file_result = future.result(timeout=300)
 
-                        # Update match-level tracking
-                        self._update_match_result(task, file_result)
+                            # Update file results
+                            file_results[task.file_path] = file_result
 
-                        # Update session stats
-                        self._update_session_stats(file_result)
+                            # Update match-level tracking
+                            self._update_match_result(task, file_result)
 
-                        # Update progress bar
-                        if file_result["status"] == DownloadStatus.SUCCESS:
-                            pbar.set_postfix(status="✓", file=task.filename[:20])
-                        elif file_result["status"] == DownloadStatus.SKIPPED:
-                            pbar.set_postfix(status="⊙", file=task.filename[:20])
-                        elif file_result["status"] == DownloadStatus.INVALID:
-                            pbar.set_postfix(status="⚠", file=task.filename[:20])
-                        else:
-                            pbar.set_postfix(status="✗", file=task.filename[:20])
+                            # Update session stats
+                            self._update_session_stats(file_result)
 
-                        processed_count += 1
+                            # Get rate limit status for main progress bar
+                            rate_status = betfair_rate_limiter.get_current_usage()
 
-                        # Checkpoint save
-                        if processed_count % self.checkpoint_interval == 0:
-                            self._save_checkpoint(
-                                checkpoint_path, file_results, self.match_results
+                            # Update progress bar with status and rate limit info
+                            if file_result["status"] == DownloadStatus.SUCCESS:
+                                status_icon = "✓"
+                            elif file_result["status"] == DownloadStatus.SKIPPED:
+                                status_icon = "⊙"
+                            elif file_result["status"] == DownloadStatus.INVALID:
+                                status_icon = "⚠"
+                            else:
+                                status_icon = "✗"
+
+                            # If no separate rate monitor, show rate info in main bar
+                            if not rate_monitor:
+                                pbar.set_postfix(
+                                    {
+                                        "status": status_icon,
+                                        "file": task.filename[:15],
+                                        "rate": f"{rate_status['current_requests']}/{rate_status['max_requests']}",
+                                        "usage": f"{rate_status['usage_percent']:.0f}%",
+                                    }
+                                )
+                            else:
+                                # Simpler display if we have separate rate monitor
+                                pbar.set_postfix(
+                                    {"status": status_icon, "file": task.filename[:20]}
+                                )
+
+                            processed_count += 1
+
+                            # Checkpoint save
+                            if processed_count % self.checkpoint_interval == 0:
+                                self._save_checkpoint(
+                                    checkpoint_path, file_results, self.match_results
+                                )
+                                logger.debug(
+                                    f"Checkpoint saved: {processed_count} files processed"
+                                )
+
+                        except Exception as e:
+                            logger.error(f"Failed to process {task.filename}: {e}")
+                            file_results[task.file_path] = {
+                                "status": DownloadStatus.FAILED,
+                                "error": str(e),
+                                "file": task.filename,
+                            }
+                            self._update_match_result(
+                                task, file_results[task.file_path]
                             )
-                            logger.debug(
-                                f"Checkpoint saved: {processed_count} files processed"
-                            )
 
-                    except Exception as e:
-                        logger.error(f"Failed to process {task.filename}: {e}")
-                        file_results[task.file_path] = {
-                            "status": DownloadStatus.FAILED,
-                            "error": str(e),
-                            "file": task.filename,
-                        }
-                        self._update_match_result(task, file_results[task.file_path])
-
-                    pbar.update(1)
+                        pbar.update(1)
+        finally:
+            # Stop rate monitoring
+            if rate_monitor:
+                self._monitoring_active = False
+                time.sleep(0.6)  # Give monitor thread time to close
 
         # Final checkpoint save
         self._save_checkpoint(checkpoint_path, file_results, self.match_results)
         logger.info(f"Download complete: processed {len(file_results)} files")
+
+        # Log final rate limiter status
+        final_status = betfair_rate_limiter.get_current_usage()
+        logger.info(
+            f"Final rate limiter status: {final_status['current_requests']}/{final_status['max_requests']} requests in window"
+        )
 
     def _download_single_file_task(self, task: FileDownloadTask) -> Dict:
         """
@@ -742,10 +851,11 @@ class BetfairBulkDownloader(BetfairDownloader):
 if __name__ == "__main__":
     from pathlib import Path
 
-    # Initialize downloader with more workers for file-level parallelism
+    # Initialize downloader with rate limit monitoring
     downloader = BetfairBulkDownloader(
-        max_workers=8,  # Can be higher since we're threading on files
+        max_workers=8,  # Adjust based on rate limit observations
         checkpoint_interval=50,  # Save every 50 files
+        show_rate_limit_bar=True,  # Show dedicated rate limit monitor
     )
 
     # Single JSON file
