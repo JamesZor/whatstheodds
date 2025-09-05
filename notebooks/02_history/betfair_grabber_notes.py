@@ -3,7 +3,8 @@ from pathlib import Path
 
 import pandas as pd
 
-from whatstheodds.history.betfair_details import BetfairDetailsGrabber
+# from whatstheodds.history.betfair_details import BetfairDetailsGrabber
+from whatstheodds.history.betfair_details_v1 import BetfairDetailsGrabber
 
 TEST_DF_FILE_PATH = Path(
     "/home/james/bet_project/football_data/scot_nostats_20_to_24/football_data_mixed_matches.csv"
@@ -25,13 +26,13 @@ old search method did a market ata time.
 Looking to get all files for the market in one
     - need to look that the return type for this, will be different from that of the betfairresult 
     - structure 
-"""
-row = df.iloc[433]
-print(row)
-search_request = grabber.map_match_from_row(row)
-print(search_request)
-search_results_all = grabber.search_match_all(search_request)
-print(search_results_all)
+# """
+# row = df.iloc[433]
+# print(row)
+# search_request = grabber.map_match_from_row(row)
+# print(search_request)
+# search_results_all = grabber.search_match_all(search_request)
+# print(search_results_all)
 ###########################
 
 
@@ -41,11 +42,11 @@ notes on running the new version, well checks
 
 old without threading
 """
-results = grabber.process_batch(
-    matches_df=df_reduced, output_filename="fast_results.json", mode="new_only"
-)
-
-grabber.print_processing_summary(results)
+# results = grabber.process_batch(
+#     matches_df=df_reduced, output_filename="fast_results.json", mode="new_only"
+# )
+#
+# grabber.print_processing_summary(results)
 """ Processing matches: 100%|██████████| 5/5 [02:14<00:00, 26.93s/it]
 ============================================================
 PROCESSING SUMMARY (Fast Mode)
@@ -73,7 +74,6 @@ Progress: ███████████████████████�
 """
 add threading into the class 
 """
-
 
 results = grabber.process_batch(
     matches_df=df_reduced,

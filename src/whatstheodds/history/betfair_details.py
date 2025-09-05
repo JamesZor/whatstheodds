@@ -1,6 +1,7 @@
 import json
 import logging
 import threading
+import time  # Added for rate limit monitor shutdown
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -16,6 +17,9 @@ from tqdm import tqdm
 
 from whatstheodds.betfair.api_client import setup_betfair_api_client
 from whatstheodds.betfair.dataclasses import BetfairSearchRequest, BetfairSearchResult
+
+# Added for rate limiting
+from whatstheodds.betfair.rate_limiter import RateLimitedContext, betfair_rate_limiter
 from whatstheodds.betfair.search_engine import BetfairSearchEngine
 from whatstheodds.mappers.match_mapper import MatchMapper
 from whatstheodds.utils import load_config
@@ -166,6 +170,7 @@ class BetfairDetailsGrabber:
 
         self.max_workers = self.cfg.grabber.max_number_of_workers
         self.results_lock = Lock()
+        self._monitoring_active = False  # Added for rate limit monitor
 
         logger.info("BetfairDetailsGrabber (Fast Version) initialized")
         logger.info(f"Output directory: {self.output_dir}")
@@ -246,7 +251,9 @@ class BetfairDetailsGrabber:
         """
         try:
             # Use the fast search method that returns all files
-            file_list = self.search_engine.search_match(search_request)
+            # Wrap API call with RateLimitedContext
+            with RateLimitedContext():
+                file_list = self.search_engine.search_match(search_request)
 
             if file_list is None:
                 logger.warning(
@@ -360,6 +367,10 @@ class BetfairDetailsGrabber:
             matches_df["match_id"].astype(str).isin(to_process)
         ]
 
+        # Initialize rate limit monitor
+        rate_monitor = self._create_rate_limit_monitor(position=1)
+        pbar_position = 0 if rate_monitor else None
+
         # Process with thread pool
         complete_count = 0
         failed_count = 0
@@ -373,7 +384,9 @@ class BetfairDetailsGrabber:
                 futures.append(future)
 
             # Process completed futures with progress bar
-            with tqdm(total=len(futures), desc="Processing matches") as pbar:
+            with tqdm(
+                total=len(futures), desc="Processing matches", position=pbar_position
+            ) as pbar:
                 for future in as_completed(futures):
                     try:
                         sofa_id, result_dict = future.result(timeout=30)
@@ -416,6 +429,11 @@ class BetfairDetailsGrabber:
                             "rate": f"{processed_count/(pbar.format_dict['elapsed'] or 1):.1f}/s",
                         }
                     )
+
+        # Stop rate limit monitor
+        if rate_monitor:
+            self._monitoring_active = False
+            time.sleep(0.6)  # Allow thread to close cleanly
 
         # Final save
         results["metadata"]["last_updated"] = datetime.now().isoformat()
@@ -680,6 +698,51 @@ class BetfairDetailsGrabber:
         return results
 
     # ========== Helper Methods ==========
+
+    def _create_rate_limit_monitor(self, position: int = 1) -> Optional[tqdm]:
+        """Creates a separate progress bar to monitor API rate limit usage."""
+        rate_bar = tqdm(
+            total=100,
+            desc="Rate Limit",
+            position=position,
+            bar_format="{desc}: {percentage:3.0f}%|{bar}| {postfix}",
+            leave=False,
+            colour="yellow",
+        )
+        self._monitoring_active = True
+
+        def update_rate_bar():
+            """Background task to update the rate limit bar with current status."""
+            while self._monitoring_active:
+                try:
+                    status = betfair_rate_limiter.get_current_usage()
+
+                    rate_bar.n = int(status["window_usage_percent"])
+                    rate_bar.colour = (
+                        "red"
+                        if status["window_usage_percent"] > 90
+                        else (
+                            "yellow" if status["window_usage_percent"] > 70 else "green"
+                        )
+                    )
+                    rate_bar.set_postfix(
+                        {
+                            "reqs": f"{status['current_requests_in_window']}/{status['max_requests_in_window']}",
+                            "concurrent": f"{status['active_concurrent_downloads']}/{status['max_concurrent_downloads']}",
+                        }
+                    )
+                    rate_bar.refresh()
+                except Exception:
+                    # Fail silently to not interrupt the main download
+                    pass
+
+                time.sleep(0.5)
+
+            rate_bar.close()
+
+        monitor_thread = threading.Thread(target=update_rate_bar, daemon=True)
+        monitor_thread.start()
+        return rate_bar
 
     def _is_complete(self, sofa_id: str, results: Dict) -> bool:
         """Check if a match is complete (all expected markets found)"""
