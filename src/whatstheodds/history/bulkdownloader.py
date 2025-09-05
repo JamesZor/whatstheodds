@@ -150,7 +150,7 @@ class BetfairBulkDownloader(BetfairDownloader):
                     rate_bar.refresh()
                 except Exception:
                     pass  # Ignore errors in monitoring thread
-                time.sleep(0.5)  # Update every 500ms
+                time.sleep(0.2)  # Update every 500ms
             rate_bar.close()
 
         # Start monitoring thread
