@@ -2,12 +2,14 @@ betfair_client:
   env_file: ".env"
   required_credentials: ["USER_NAME", "PASSWORD", "APP_KEY"]
 
-
 mapping:
   mapping_dir: "mappings"
-  active_files: ["scotland.json"]
+  active_files: ["scotland.json", "england.json"]
   tournament_country_map:
     "1": "GB"   # English Premier League
+    "2": "GB"   # English Championship
+    "3": "GB"   # English League one
+    "84": "GB"  # English League two
     "54": "GB"  # Scottish Premiership
     "55": "GB"  # Scottish Championship
 
