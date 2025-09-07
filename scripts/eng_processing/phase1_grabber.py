@@ -11,7 +11,7 @@ TEST_DF_FILE_PATH = Path(
 
 df = pd.read_csv(TEST_DF_FILE_PATH)
 df["match_date"] = pd.to_datetime(df["match_date"])
-df_reduced = df[df["season"] == "24/25"]
+df_reduced = df[df["season"].isin(["24/25", "23/24"])]
 
 print(len(df_reduced))
 
@@ -22,17 +22,25 @@ grabber = BetfairDetailsGrabber(
 )
 
 # First run
-results = grabber.process_batch(
-    matches_df=df_reduced,
-    output_filename="bet_grabber_24_25.json",
-    mode="new_only",
-)
+# results = grabber.process_batch(
+#     matches_df=df_reduced,
+#     output_filename="bet_grabber_24_25.json",
+#     mode="new_and_failed",
+# )
 
 # Resume after interruption
 # results = grabber.process_batch(
 #     matches_df=matches_df, mode="new_and_incomplete"  # Only process incomplete
 # )
 # Get analysis
-grabber.print_processing_summary(results)
+# grabber.print_processing_summary(results)
 summary = grabber.get_market_coverage_summary()
-print(json.dumps(summary, indent=4))
+
+print(
+    grabber.get_failed_matches(
+        Path(
+            "/home/james/bet_project/football/eng_20_25_processing/bet_grabber_24_25.json"
+        )
+    )
+)
+# print(json.dumps(summary, indent=4))

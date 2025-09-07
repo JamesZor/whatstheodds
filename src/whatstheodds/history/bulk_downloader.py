@@ -454,7 +454,8 @@ class BetfairBulkDownloader:
             if self._validate_downloaded_file(local_path):
                 return local_path
             else:
-                logger.warning(
+                # HACK: warning to info
+                logger.info(
                     f"Validation failed for {task.filename}. Deleting invalid file."
                 )
                 local_path.unlink(missing_ok=True)
@@ -532,7 +533,7 @@ class BetfairBulkDownloader:
                 # Ensure it's valid JSON
                 json.loads(first_line)
                 return True
-        except (IOError, UnicodeDecodeError, json.JSONDecodeError, bz2.BZ2Error):
+        except (IOError, UnicodeDecodeError, json.JSONDecodeError):
             return False
 
     def download_from_phase1_json(

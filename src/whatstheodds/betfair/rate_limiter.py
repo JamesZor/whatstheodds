@@ -24,7 +24,7 @@ class BetfairHistoricalRateLimiter:
         max_requests: int = cfg.betfair_rate_limit.max_request,  # type: ignore[union-attr]
         time_window: int = cfg.betfair_rate_limit.time_window,  # type: ignore[union-attr]
         # NEW: Add a limit for concurrent downloads from the config.
-        max_concurrent: int = cfg.betfair_rate_limit.get("max_concurrent", 22),  # type: ignore[union-attr]
+        max_concurrent: int = cfg.betfair_rate_limit.get("max_concurrent", 40),  # type: ignore[union-attr]
     ):
         """
         Initialize rate limiter
