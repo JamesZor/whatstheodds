@@ -1,6 +1,5 @@
 import argparse
 import json
-import sys
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -51,9 +50,9 @@ def load_filter_teams(filter_files):
                 data = json.load(f)
                 # We use the values from the mapping, as requested
                 allowed_teams.update(data.values())
-            print(f"Loaded {len(data)} teams from '{file_path}'", file=sys.stderr)
+            print(f"Loaded {len(data)} teams from '{file_path}'")
         else:
-            print(f"Warning: Filter file not found at '{file_path}'", file=sys.stderr)
+            print(f"Warning: Filter file not found at '{file_path}'")
     return allowed_teams
 
 
@@ -97,18 +96,18 @@ def list_todays_games(trading, soccer_event_type_id, filter_teams):
 
 def get_market_odds(trading, soccer_event_type_id, event_name, output_format):
     """Fetches odds and directs them to the correct display/output function."""
-    print(f"Searching for event: '{event_name}'", file=sys.stderr)
+    print(f"Searching for event: '{event_name}'")
     events = trading.betting.list_events(
         filter=filters.market_filter(
             event_type_ids=[soccer_event_type_id], text_query=event_name
         )
     )
     if not events:
-        print(f"Could not find any events for '{event_name}'", file=sys.stderr)
+        print(f"Could not find any events for '{event_name}'")
         return
 
     event = events[0].event
-    print(f"Found Event: {event.name}, ID: {event.id}", file=sys.stderr)
+    print(f"Found Event: {event.name}, ID: {event.id}")
 
     market_catalogues = trading.betting.list_market_catalogue(
         filter=filters.market_filter(
@@ -127,10 +126,7 @@ def get_market_odds(trading, soccer_event_type_id, event_name, output_format):
         return
 
     market_books = []
-    print(
-        f"Found {len(market_catalogues)} markets. Fetching odds individually...",
-        file=sys.stderr,
-    )
+    print(f"Found {len(market_catalogues)} markets. Fetching odds individually...")
     for catalogue in market_catalogues:
         # Fetching odds for each market ID individually is the safest way to avoid TOO_MUCH_DATA
         book = trading.betting.list_market_book(
@@ -325,7 +321,7 @@ def main():
 
     finally:
         trading.logout()
-        print("Logged out.", file=sys.stderr)
+        print("Logged out.")
 
 
 if __name__ == "__main__":
