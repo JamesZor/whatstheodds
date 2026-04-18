@@ -197,20 +197,32 @@ def get_market_odds(trading, soccer_event_type_id, event_name, output_format):
 def display_simple_results(results):
     """Prints results in a simple, human-readable format."""
     print(f"\n{'='*40}\nEvent: {results['event_name']}\n{'='*40}\n")
+
     for market in results["markets"]:
         print(f"--- Market: {market['market_name']} ---")
+
         for runner in market["runners"]:
             print(f"  - {runner['runner_name']}:")
+
             back_info = runner.get("back")
             lay_info = runner.get("lay")
-            print(
-                f"    - Back: Price={back_info['price']}, Size=£{back_info['size']:.2f}"
-            )
-            print(
-                f"    - Lay:  Price={lay_info['price']}, Size=£{lay_info['size']:.2f}"
-            )
-            # print(f"    - Back: {'Price=' + str(back_info['price']) + ', Size=£' + f'{back_info["size"]:.2f}' if back_info else 'No odds'}")
-            # print(f"    - Lay:  {'Price=' + str(lay_info['price']) + ', Size=£' + f'{lay_info["size"]:.2f}' if lay_info else 'No odds'}")
+
+            # SAFETY CHECK: Only try to print details if back_info is not None
+            if back_info:
+                print(
+                    f"    - Back: Price={back_info['price']}, Size=£{back_info['size']:.2f}"
+                )
+            else:
+                print("    - Back: No odds available")
+
+            # SAFETY CHECK: Only try to print details if lay_info is not None
+            if lay_info:
+                print(
+                    f"    - Lay:  Price={lay_info['price']}, Size=£{lay_info['size']:.2f}"
+                )
+            else:
+                print("    - Lay:  No odds available")
+
         print("-" * 30 + "\n")
 
 
