@@ -33,9 +33,9 @@ from datetime import datetime
 # 24_04_26
 MATCHES_TO_TRACK = {
     "St Patricks v Bohemians": "st-patricks-athletic",
-    "Waterford v Galway Utd": "shelbourne",
-    "Shelbourne v Drogheda": "waterford-fc",
     "Derry City v Shamrock Rovers": "derry-city",
+    "Waterford v Galway Utd": "waterford-fc",  # <-- FIXED
+    "Shelbourne v Drogheda": "shelbourne",  # <-- FIXED
 }
 
 
