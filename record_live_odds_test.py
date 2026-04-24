@@ -2,6 +2,7 @@ import json
 import subprocess
 from datetime import datetime
 
+# 17_04_26
 # MATCHES_TO_TRACK = {
 #     "Drogheda v St Patricks": "drogheda-united",
 #     "Dundalk v Galway Utd": "dundalk-fc",
@@ -12,21 +13,33 @@ from datetime import datetime
 # JSONL_FILENAME = "raw_odds_history.jsonl"
 #
 
+# 18_04_26
+# MATCHES_TO_TRACK = {
+#     "Alloa v East Fife": "alloa-athletic",
+#     "Cove Rangers v Stenhousemuir": "cove-rangers",
+#     "Inverness CT v Kelty Hearts": "inverness-caledonian-thistle",
+#     "Montrose v Hamilton": "montrose",
+#     "Peterhead v Queen of South": "peterhead",
+#     "Annan v Spartans": "annan-athletic",
+#     "Clyde v Dumbarton": "clyde-fc",
+#     "East Kilbride v Edinburgh City": "east-kilbride",
+#     "Stirling v Elgin City FC": "stirling-albion",
+#     "Stranraer v Forfar": "stranraer",
+# }
+#
+# JSONL_FILENAME = "raw_odds_history_scotland.jsonl"
 
+
+# 24_04_26
 MATCHES_TO_TRACK = {
-    "Alloa v East Fife": "alloa-athletic",
-    "Cove Rangers v Stenhousemuir": "cove-rangers",
-    "Inverness CT v Kelty Hearts": "inverness-caledonian-thistle",
-    "Montrose v Hamilton": "montrose",
-    "Peterhead v Queen of South": "peterhead",
-    "Annan v Spartans": "annan-athletic",
-    "Clyde v Dumbarton": "clyde-fc",
-    "East Kilbride v Edinburgh City": "east-kilbride",
-    "Stirling v Elgin City FC": "stirling-albion",
-    "Stranraer v Forfar": "stranraer",
+    "St Patricks v Bohemians": "st-patricks-athletic",
+    "Waterford v Galway Utd": "shelbourne",
+    "Shelbourne v Drogheda": "waterford-fc",
+    "Derry City v Shamrock Rovers": "derry-city",
 }
 
-JSONL_FILENAME = "raw_odds_history_scotland.jsonl"
+
+JSONL_FILENAME = "raw_odds_ireland_24_04_26.jsonl"
 
 
 def fetch_and_append_json():
