@@ -31,30 +31,48 @@ from datetime import datetime
 
 
 # 24_04_26
-MATCHES_TO_TRACK = {
-    "St Patricks v Bohemians": "st-patricks-athletic",
-    "Derry City v Shamrock Rovers": "derry-city",
-    "Waterford v Galway Utd": "waterford-fc",  # <-- FIXED
-    "Shelbourne v Drogheda": "shelbourne",  # <-- FIXED
-}
-JSONL_FILENAME = "raw_odds_ireland_24_04_26.jsonl"
-
+# MATCHES_TO_TRACK = {
+#     "St Patricks v Bohemians": "st-patricks-athletic",
+#     "Derry City v Shamrock Rovers": "derry-city",
+#     "Waterford v Galway Utd": "waterford-fc",  # <-- FIXED
+#     "Shelbourne v Drogheda": "shelbourne",  # <-- FIXED
+# }
+# JSONL_FILENAME = "raw_odds_ireland_24_04_26.jsonl"
+#
 # 25_04_26
 
+# MATCHES_TO_TRACK = {
+#     "East Fife v Inverness CT": "east-fife",
+#     "Kelty Hearts v Cove Rangers": "kelty-hearts-fc",
+#     "Queen of South v Montrose": "queen-of-the-south",
+#     "Hamilton v Peterhead": "hamilton-academical",
+#     "Stenhousemuir v Alloa": "stenhousemuirr",
+#     "Dumbarton v East Kilbride": "dumbarton",
+#     "Clyde v Annan": "clyde-fc",
+#     "Spartans v Elgin City FC": "the-spartans-fc",
+#     "Forfar v Edinburgh City": "forfar-athletic",
+#     "Stranraer v Stirling": "stranraer",
+# }
+#
+# JSONL_FILENAME = "raw_odds_scotland_25_04_26.jsonl"
+#
+
+# 2026-05-02
+
 MATCHES_TO_TRACK = {
-    "East Fife v Inverness CT": "east-fife",
-    "Kelty Hearts v Cove Rangers": "kelty-hearts-fc",
-    "Queen of South v Montrose": "queen-of-the-south",
-    "Hamilton v Peterhead": "hamilton-academical",
-    "Stenhousemuir v Alloa": "stenhousemuirr",
-    "Dumbarton v East Kilbride": "dumbarton",
-    "Clyde v Annan": "clyde-fc",
-    "Spartans v Elgin City FC": "the-spartans-fc",
-    "Forfar v Edinburgh City": "forfar-athletic",
-    "Stranraer v Stirling": "stranraer",
+    "Peterhead v Kelty Hearts": "peterhead",
+    "Montrose v Stenhousemuir": "montrose",
+    "Edinburgh City v Dumbarton": "edinburgh-city-fc",
+    "Inverness CT v Hamilton": "inverness-caledonian-thistle",
+    "East Kilbride v Clyde": "east-kilbride",
+    "Alloa v Queen of South": "alloa-athletic",
+    "Elgin City FC v Stranraer": "elgin-city",
+    "Stirling v Spartans": "stirling-albion",
+    "Annan v Forfar": "annan-athletic",
+    "Cove Rangers v East Fife": "cove-rangers",
 }
 
-JSONL_FILENAME = "raw_odds_scotland_25_04_26.jsonl"
+JSONL_FILENAME = "raw_odds_scotland_02_05_26.jsonl"
 
 
 def fetch_and_append_json():
