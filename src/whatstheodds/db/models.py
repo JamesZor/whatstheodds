@@ -60,6 +60,7 @@ class BetfairMarket(Base):
     )
 
     market_type = Column(String, nullable=False)  # e.g 'MATCH_ODDS', 'OVER_UNDER'
+    file_path = Column(String, nullable=True)
 
     # state Machine ( queue ) Columns
     status = Column(

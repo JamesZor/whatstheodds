@@ -41,7 +41,8 @@ class SearchProducer:
         )
 
         markets_to_queue = [
-            (str(m.market_id), m.market_type) for m in result.valid_markets.values()
+            (str(m.market_id), m.market_type, m.file)
+            for m in result.valid_markets.values()
         ]
         self.db.queue_markets(match_id, markets_to_queue)
 
@@ -152,4 +153,4 @@ class SearchProducer:
 if __name__ == "__main__":
     # You can now specify how many threads to run (e.g., 5 to 10 is usually safe for search)
     producer = SearchProducer()
-    producer.run(tournament_filters=[56], limit_filter=2)
+    producer.run(tournament_filters=[56], limit_filter=5)
