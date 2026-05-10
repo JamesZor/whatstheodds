@@ -5,8 +5,6 @@ betfair_client:
   env_file: ".env"
   required_credentials: ["USER_NAME", "PASSWORD", "APP_KEY"]
 
-
-
 search:
   primary_strategy: "ExactDateTeamSearch"
   extended_strategy: "ExtendDateTeamSearch" # null for none
@@ -20,3 +18,24 @@ search:
     day: 30
     minute: 0
     hour: 0
+
+betfair_football:
+  sport: "Soccer"
+  plan: "Basic Plan"
+  file_type: ["M"]
+  markets: [
+    # Half-time markets
+       "HALF_TIME",
+       "FIRST_HALF_GOALS_05",
+       "FIRST_HALF_GOALS_15",
+       "FIRST_HALF_GOALS_25",
+       "HALF_TIME_SCORE",
+  #### Full-time markets
+      "MATCH_ODDS",
+      "OVER_UNDER_05",
+      "OVER_UNDER_15",
+      "OVER_UNDER_25",
+      "OVER_UNDER_35",
+      "CORRECT_SCORE", 
+      "BOTH_TEAMS_TO_SCORE",
+            ]

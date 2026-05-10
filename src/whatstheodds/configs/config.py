@@ -6,7 +6,6 @@ the main config setting for the package.
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
 
 import yaml
 from dacite import from_dict
@@ -20,7 +19,7 @@ class DataBaseConfig:
 @dataclass
 class BetfairClientConfig:
     env_file: str
-    required_credentials: str
+    required_credentials: list[str]
 
 
 @dataclass
@@ -38,12 +37,21 @@ class SearchEngineConfig:
     extended_strategy_conf: SearchDateComponent
 
 
+@dataclass
+class BetfairFootballConfig:
+    sport: str
+    plan: str
+    file_type: list[str]
+    markets: list[str]
+
+
 # main app config
 @dataclass
 class AppConfig:
     database: DataBaseConfig
-    betfairclient: BetfairClientConfig
+    betfair_client: BetfairClientConfig
     search: SearchEngineConfig
+    betfair_football: BetfairClientConfig
 
 
 # --- Configs Functions
@@ -76,3 +84,9 @@ if __name__ == "__main__":
     config = load_config()
     print(f"Loaded config successfully!")
     print(f"DB URL: {config.database.url}")
+    print(
+        f"Betfair Client: {config.betfairclient.env_file} : {config.betfairclient.required_credentials}"
+    )
+    print(
+        f"search: ps:{config.search.primary_strategy}, ss:{config.search.extended_strategy}, : {config.search.exact_date_team_search}"
+    )
