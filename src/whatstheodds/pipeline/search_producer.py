@@ -1,7 +1,7 @@
 # src/whatstheodds/pipeline/search_producer.py
 import logging
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Optional
 
 import betfairlightweight  # type: ignore
@@ -23,7 +23,7 @@ class SearchProducer:
         self.mapper = MatchMapper()
 
     def _succes_process_match(
-        self, match_id: int, request: BetfairSearchResult, result: BetfairSearchResult
+        self, match_id: int, result: BetfairSearchResult, start_time: datetime
     ):
         strategy = (
             list(result.valid_markets.values())[0].strategy_used
@@ -35,8 +35,9 @@ class SearchProducer:
             match_id=match_id,
             betfair_id=str(result.match_id),
             name=f"{result.home} v {result.away}",
-            kickoff_time=request.date,
             strategy=strategy,
+            kickoff_time=start_time,
+            status="SUCCESS",
         )
 
         markets_to_queue = [
@@ -44,70 +45,87 @@ class SearchProducer:
         ]
         self.db.queue_markets(match_id, markets_to_queue)
 
-        pass
-
     def _fail_process_match(
         self, match_id: int, request: BetfairSearchRequest, result: BetfairSearchResult
     ):
-        # If the match failed, valid_markets is empty.
-        # We grab the strategy tracker from the first missing market instead.
         strategy = (
             list(result.missing_markets.values())[0].strategy_used + "_FAILED"
             if result.missing_markets
             else "FAILED_UNKNOWN"
         )
 
-        # We log it so we don't keep searching for it, allowing manual investigation
         self.db.upsert_betfair_meta(
             match_id=match_id,
-            betfair_id=None,  # Now allowed because of nullable=True
+            betfair_id=None,
             name=f"{request.home} v {request.away}",
-            kickoff_time=request.date,
             strategy=strategy,
+            kickoff_time=request.date,
+            status="NOT_FOUND",  # It didn't crash, it just isn't there
+            error_log="Match not found in Betfair historical data",
         )
 
     def process_match(self, match_data):
         """Worker function for a single match."""
-        # Note: Ensure self.db and self.mapper are initialized in __init__
         match_id, home, away, start_time, country = match_data
 
         try:
-            # 1. Convert timestamp to datetime (as we discussed)
-            kickoff_dt = datetime.fromtimestamp(start_time, tz=datetime.timezone.utc)
+            # 1. Convert timestamp to datetime
+            kickoff_dt = datetime.fromtimestamp(start_time, tz=timezone.utc)
 
-            # 2. Map Names (Where the 400 often starts if mapping fails)
+            # HACK:
+            # 2. Map Names
+            # (Note: Let's force "GB" here just to test if the country code was the issue!)
+            safe_country = (
+                "GB"
+                if country in ["England", "Scotland", "United Kingdom"]
+                else (country or "GB")
+            )
+
             request = self.mapper.map_match(
                 sofa_match_id=match_id,
                 home_team_slug=home,
                 away_team_slug=away,
                 date=kickoff_dt,
+                country_code=safe_country,
             )
 
-            # 3. Execute Search (Primary + Extended fallback)
+            # --- THE MAPPING SAFETY NET ---
+            if request is None:
+                self.db.upsert_betfair_meta(
+                    match_id=match_id,
+                    betfair_id=None,
+                    name=f"{home} v {away}",
+                    strategy="MAPPING_FAILED",
+                    kickoff_time=kickoff_dt,
+                    status="FAILED",
+                    error_log="Team mapping failed (missing in JSON)",
+                )
+                return f"MAPPING FAILED: {home} v {away}"
+
+            # 3. Search Betfair
             result = self.search_engine.search_main(request)
 
             if result.match_id:
-                # SUCCESS: Update DB to 'COMPLETED' or 'VERIFIED'
-                self._success_process_match(match_id, request, result)
+                self._succes_process_match(match_id, result, kickoff_dt)
+                return f"SUCCESS: {home} v {away}"
             else:
-                # STRATEGY FAILURE: No match found on Betfair
-                # Log as 'FAILED_NOT_FOUND' so you don't keep wasting API calls
-                self._fail_process_match(
-                    match_id, "No match found with current strategies"
-                )
-
-        except betfairlightweight.exceptions.APIError as e:
-            # API FAILURE: (e.g., the 400 error)
-            # Log as 'RETRY_REQUIRED'
-            error_msg = f"Betfair API 400/500: {str(e)}"
-            logger.error(f"Match {match_id} API Error: {error_msg}")
-            self.db.update_match_status(match_id, status="RETRY", error_log=error_msg)
+                self._fail_process_match(match_id, request, result)
+                return f"NOT FOUND: {home} v {away}"
 
         except Exception as e:
-            # GENERAL FAILURE: (e.g., Database connection or Logic error)
-            error_msg = f"Critical Failure: {str(e)}"
-            logger.exception(f"Unexpected error on match {match_id}")
-            self.db.update_match_status(match_id, status="ERROR", error_log=error_msg)
+            logger.error(f"Failed to process match {match_id}: {e}")
+
+            # --- THE API CRASH SAFETY NET ---
+            self.db.upsert_betfair_meta(
+                match_id=match_id,
+                betfair_id=None,
+                name=f"{home} v {away}",
+                strategy="API_CRASH",
+                kickoff_time=datetime.fromtimestamp(start_time) if start_time else None,
+                status="FAILED",
+                error_log=str(e),
+            )
+            return f"ERROR: {match_id} - {str(e)}"
 
     def run(
         self,
@@ -134,4 +152,4 @@ class SearchProducer:
 if __name__ == "__main__":
     # You can now specify how many threads to run (e.g., 5 to 10 is usually safe for search)
     producer = SearchProducer()
-    producer.run(tournament_filters=[54], limit_filter=5)
+    producer.run(tournament_filters=[56], limit_filter=2)

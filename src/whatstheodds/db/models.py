@@ -44,6 +44,8 @@ class BetfairMatchMeta(Base):
 
     last_updated = Column(DateTime, onupdate=func.now())
 
+    markets = relationship("BetfairMarket", back_populates="match")
+
     def __repr__(self):
         return f"<BetfairMatchMeta(match_id={self.match_id}, status={self.status})>"
 

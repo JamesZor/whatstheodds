@@ -71,20 +71,22 @@ class DatabaseManager:
         betfair_id: Optional[str],
         name: str,
         strategy: str,
-        kickoff_time: datetime,
+        kickoff_time: Optional[datetime] = None,
+        status: str = "SUCCESS",  # NEW
+        error_log: Optional[str] = None,  # NEW
     ):
-        """Saves the Betfair match metadata (handles both successes and failures)."""
+        """Saves the Betfair match metadata (handles successes, failures, and crashes)."""
 
         meta = BetfairMatchMeta(
             match_id=match_id,
-            betfair_event_id=betfair_id,  # This will safely be NULL in the DB if not found
+            betfair_event_id=betfair_id,
             betfair_event_name=name,
             kickoff_time=kickoff_time,
             search_strategy_used=strategy,
-            # If we found it, log the time. If not, we leave date matched as NULL
             search_date_matched=datetime.utcnow() if betfair_id else None,
-            # If we found it, it's verified (until manually changed). If not, it's definitely False.
             is_verified=True if betfair_id else False,
+            status=status,  # NEW
+            error_log=error_log,  # NEW
         )
 
         with self.SessionLocal() as session:
