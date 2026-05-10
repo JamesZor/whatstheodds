@@ -1,3 +1,5 @@
+# src/whatstheodds/betfair/search_engine.pu
+
 import logging
 import time
 from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union
@@ -132,6 +134,10 @@ class BetfairSearchEngine:
                         logger.warning(
                             f"Extended search failed for {result.market_type}: {str(e)}"
                         )
+                    except betfairlightweight.exceptions.APIError as e:
+                        logger.error(f"API Error during extended search: {e}")
+                        time.sleep(0.5)  # Short pause before next market
+                        continue
 
                 # Keep the original failed result
         return BetfairSearchResult.from_results_list(search_results, search_request)  # type: ignore[no-any-return]

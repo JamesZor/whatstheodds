@@ -45,13 +45,20 @@ class BetfairFootballConfig:
     markets: list[str]
 
 
+@dataclass
+class MaxworkersConfig:
+    search: int
+    download: int
+
+
 # main app config
 @dataclass
 class AppConfig:
     database: DataBaseConfig
     betfair_client: BetfairClientConfig
     search: SearchEngineConfig
-    betfair_football: BetfairClientConfig
+    betfair_football: BetfairFootballConfig
+    max_workers: MaxworkersConfig
 
 
 # --- Configs Functions

@@ -39,3 +39,7 @@ betfair_football:
       "CORRECT_SCORE", 
       "BOTH_TEAMS_TO_SCORE",
             ]
+
+max_workers:
+  search: 1
+  download: 5

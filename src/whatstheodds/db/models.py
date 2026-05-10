@@ -15,6 +15,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import declarative_base, relationship
+from sqlalchemy.sql import func
 
 # Create a specific BAse for our betfair models
 Base = declarative_base()
@@ -25,20 +26,26 @@ class BetfairMatchMeta(Base):
     __table_args__ = {"schema": "betfair"}
 
     # foregin key directly to the existing sofascrape_db event table
-    match_id = Column(Integer, ForeignKey("public.events.match_id"), primary_key=True)
+    # The Identifiers
+    match_id = Column(Integer, primary_key=True)  # SofaScore Match ID
+    betfair_event_id = Column(String, index=True)
+    betfair_event_name = Column(String)
 
-    # Betfair specific data
-    betfair_event_id = Column(String, unique=True, nullable=False)
-    betfair_event_name = Column(String, nullable=True)
-    kickoff_time = Column(DateTime(timezone=True), nullable=True)
-
-    # Search Audit Data ( To see how/if we found it)
+    # Discovery Info
+    kickoff_time = Column(DateTime(timezone=True))
     search_strategy_used = Column(String)
-    search_date_matched = Column(DateTime(timezone=True))
-    is_verified = Column(Boolean, default=False)
+    search_date_matched = Column(DateTime(timezone=True), server_default=func.now())
 
-    # relationships
-    markets = relationship("BetfairMarket", back_populates="match")
+    # The "Safety Nets" (The stuff I added that helps with the 400 errors)
+    is_verified = Column(Boolean, default=False)
+    status = Column(String, default="PENDING")  # PENDING, SUCCESS, RETRY, FAILED
+    retry_count = Column(Integer, default=0)
+    error_log = Column(Text)  # This is where you save that "Status code 400" message
+
+    last_updated = Column(DateTime, onupdate=func.now())
+
+    def __repr__(self):
+        return f"<BetfairMatchMeta(match_id={self.match_id}, status={self.status})>"
 
 
 class BetfairMarket(Base):

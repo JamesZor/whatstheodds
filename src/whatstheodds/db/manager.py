@@ -31,7 +31,7 @@ class DatabaseManager:
         Table("events", Base.metadata, autoload_with=self.engine, schema="public")
         Table("tournaments", Base.metadata, autoload_with=self.engine, schema="public")
 
-    def get_unporcessed_matches(
+    def get_unprocessed_matches(
         self,
         tournament_ids: Optional[List[int]] = None,
         season_ids: Optional[List[int]] = None,
@@ -49,7 +49,7 @@ class DatabaseManager:
             WHERE m.match_id IS NULL
         """
 
-        params: dict[str, str] = {}
+        params: dict[str, Any] = {}
 
         if tournament_ids:
             query_str += " AND e.tournament_id IN :t_ids"
@@ -59,13 +59,18 @@ class DatabaseManager:
             params["s_ids"] = tuple(season_ids)
         if limit:
             query_str += " LIMIT :n_limit"
-            params["n_limit"]
+            params["n_limit"] = limit
 
         with self.SessionLocal() as session:
             return session.execute(text(query_str), params).fetchall()
 
     def upsert_betfair_meta(
-        self, match_id: int, betfair_id: Optional[str], name: str, strategy: str
+        self,
+        match_id: int,
+        betfair_id: Optional[str],
+        name: str,
+        strategy: str,
+        kickoff_time: datetime,
     ):
         """Saves the Betfair match metadata (handles both successes and failures)."""
 
@@ -73,6 +78,7 @@ class DatabaseManager:
             match_id=match_id,
             betfair_event_id=betfair_id,  # This will safely be NULL in the DB if not found
             betfair_event_name=name,
+            kickoff_time=kickoff_time,
             search_strategy_used=strategy,
             # If we found it, log the time. If not, we leave date matched as NULL
             search_date_matched=datetime.utcnow() if betfair_id else None,
