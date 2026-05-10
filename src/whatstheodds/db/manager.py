@@ -47,6 +47,7 @@ class DatabaseManager:
             LEFT JOIN public.tournaments t ON e.tournament_id = t.tournament_id
             LEFT JOIN betfair.match_meta m ON e.match_id = m.match_id
             WHERE m.match_id IS NULL
+            and e.status_type = 'finished'
         """
 
         params: dict[str, Any] = {}
