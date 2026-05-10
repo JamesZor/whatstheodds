@@ -65,18 +65,21 @@ class DatabaseManager:
             return session.execute(text(query_str), params).fetchall()
 
     def upsert_betfair_meta(
-        self, match_id: int, betfair_id: str, name: str, strategy: str
+        self, match_id: int, betfair_id: Optional[str], name: str, strategy: str
     ):
-        """Saves the Betfair match metadata."""
+        """Saves the Betfair match metadata (handles both successes and failures)."""
 
         meta = BetfairMatchMeta(
             match_id=match_id,
-            betfair_event_id=betfair_id,
+            betfair_event_id=betfair_id,  # This will safely be NULL in the DB if not found
             betfair_event_name=name,
             search_strategy_used=strategy,
-            search_date_matched=datetime.utcnow(),
-            is_verified=True,
+            # If we found it, log the time. If not, we leave date matched as NULL
+            search_date_matched=datetime.utcnow() if betfair_id else None,
+            # If we found it, it's verified (until manually changed). If not, it's definitely False.
+            is_verified=True if betfair_id else False,
         )
+
         with self.SessionLocal() as session:
             session.merge(meta)
             session.commit()
