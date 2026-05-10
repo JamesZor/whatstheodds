@@ -1,4 +1,5 @@
 # src/whatstheodds/pipeline/search_producer.py
+
 import logging
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
