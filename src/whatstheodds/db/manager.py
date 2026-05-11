@@ -165,3 +165,18 @@ class DatabaseManager:
             # bulk_insert_mappings is incredibly fast for thousands of rows
             session.execute(insert(MarketOddsHistory), odds_records)
             session.commit()
+
+    def requeue_failed_markets(self, max_retries: int = 3) -> int:
+        """
+        Resets FAILED markets to PENDING if they are under the retry limit.
+        Returns the number of rows updated.
+        """
+        query = text("""
+            UPDATE betfair.markets
+            SET status = 'PENDING'
+            WHERE status = 'FAILED' AND retry_count < :max_retries
+        """)
+        with self.SessionLocal() as session:
+            result = session.execute(query, {"max_retries": max_retries})
+            session.commit()
+            return result.rowcount
