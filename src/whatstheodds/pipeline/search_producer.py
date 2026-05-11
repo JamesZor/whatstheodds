@@ -15,6 +15,28 @@ from whatstheodds.mappers.match_mapper import MatchMapper
 
 logger = logging.getLogger(__name__)
 
+COUNTRY_MAP = {
+    "England": "GB",
+    "Scotland": "GB",
+    "Wales": "GB",
+    "Northern Ireland": "GB",
+    "United Kingdom": "GB",
+    "Spain": "ES",
+    "Italy": "IT",
+    "Germany": "DE",
+    "France": "FR",
+    "Portugal": "PT",
+    "Netherlands": "NL",
+    "Belgium": "BE",
+    "Brazil": "BR",
+    "Argentina": "AR",
+    "USA": "US",
+    "Australia": "AU",
+    "Turkey": "TR",
+    "Greece": "GR",
+    # Add any others you scrape!
+}
+
 
 class SearchProducer:
     def __init__(self):
@@ -77,11 +99,7 @@ class SearchProducer:
             # HACK:
             # 2. Map Names
             # (Note: Let's force "GB" here just to test if the country code was the issue!)
-            safe_country = (
-                "GB"
-                if country in ["England", "Scotland", "United Kingdom"]
-                else (country or "GB")
-            )
+            safe_country = COUNTRY_MAP.get(country, "GB")
 
             request = self.mapper.map_match(
                 sofa_match_id=match_id,
@@ -154,4 +172,8 @@ class SearchProducer:
 if __name__ == "__main__":
     # You can now specify how many threads to run (e.g., 5 to 10 is usually safe for search)
     producer = SearchProducer()
-    producer.run(tournament_filters=[56], limit_filter=5)
+    producer.run(tournament_filters=[54], limit_filter=5)
+
+    # TODO: 2026-05-11
+    # Progress bar for the search overall,  Progress bar for the search overall,
+    # More than one file found --- how to deal with that print, / does this cause us an issue

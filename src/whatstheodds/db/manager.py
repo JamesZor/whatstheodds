@@ -180,3 +180,25 @@ class DatabaseManager:
             result = session.execute(query, {"max_retries": max_retries})
             session.commit()
             return result.rowcount
+
+    def get_pending_market_count(self) -> int:
+        """Returns the total number of PENDING markets in the queue."""
+        with self.SessionLocal() as session:
+            count = session.execute(
+                text("SELECT COUNT(*) FROM betfair.markets WHERE status = 'PENDING'")
+            ).scalar()
+            return count or 0
+
+    def revert_downloading_markets(self, market_ids: list):
+        """Safely reverts specific DOWNLOADING markets back to PENDING."""
+        if not market_ids:
+            return
+
+        query = text("""
+            UPDATE betfair.markets 
+            SET status = 'PENDING' 
+            WHERE market_id IN :m_ids AND status = 'DOWNLOADING'
+        """)
+        with self.SessionLocal() as session:
+            session.execute(query, {"m_ids": tuple(market_ids)})
+            session.commit()

@@ -70,24 +70,25 @@ class ExactDateTeamSearch(BaseSearchStrategy):
     ) -> BetfairSearchSingleMarketResult:  # [ignore : override ]
 
         from_date, to_date = self.get_date_interval(search_request.date)
+        api_params = {
+            "sport": self.cfg.betfair_football.sport,
+            "plan": self.cfg.betfair_football.plan,
+            "from_day": str(from_date.day),
+            "from_month": str(from_date.month),
+            "from_year": str(from_date.year),
+            "to_day": str(to_date.day),
+            "to_month": str(to_date.month),
+            "to_year": str(to_date.year),
+            "market_types_collection": [market_type],
+            "countries_collection": [search_request.country],
+            "file_type_collection": list(self.cfg.betfair_football.file_type),
+            "event_name": self.get_football_event_name(search_request),
+        }
 
         try:
             # Request file list from API
             with RateLimitedContext():
-                file_list = self.client.historic.get_file_list(
-                    sport=self.cfg.betfair_football.sport,
-                    plan=self.cfg.betfair_football.plan,
-                    from_day=str(from_date.day),
-                    from_month=str(from_date.month),
-                    from_year=str(from_date.year),
-                    to_day=str(to_date.day),
-                    to_month=str(to_date.month),
-                    to_year=str(to_date.year),
-                    market_types_collection=[market_type],
-                    countries_collection=[search_request.country],
-                    file_type_collection=list(self.cfg.betfair_football.file_type),
-                    event_name=self.get_football_event_name(search_request),
-                )
+                file_list = self.client.historic.get_file_list(**api_params)
 
             # Log success and file count
             logger.info(
@@ -121,15 +122,16 @@ class ExactDateTeamSearch(BaseSearchStrategy):
             return BetfairSearchSingleMarketResult.from_path_string(
                 file=file_list[0], strategy_used_name=self.name, market_type=market_type
             )
-
         except betfairlightweight.exceptions.BetfairError as e:
-            error_msg = f"Failed to retrieve file list: {str(e)}"
+            # 3. Append the api_params to the error string so it saves to PostgreSQL!
+            error_msg = f"API Status: {str(e)} | Sent Params: {api_params}"
             logger.error(error_msg)
             raise ConnectionError(error_msg)
+
         except Exception as e:
-            error_msg = f"Unexpected error retrieving file list: {str(e)}"
+            error_msg = f"Unexpected error: {str(e)} | Sent Params: {api_params}"
             logger.error(error_msg)
-            raise RuntimeError(error_msg)  # type: ignore[override]  # type: ignore[override]
+            raise RuntimeError(error_msg)
 
     def search_over_config_markets(
         self, search_request: BetfairSearchRequest
@@ -215,23 +217,25 @@ class ExtendDateTeamSearch(BaseSearchStrategy):
 
         from_date, to_date = self.get_date_interval(search_request.date)
 
+        api_params = {
+            "sport": self.cfg.betfair_football.sport,
+            "plan": self.cfg.betfair_football.plan,
+            "from_day": str(from_date.day),
+            "from_month": str(from_date.month),
+            "from_year": str(from_date.year),
+            "to_day": str(to_date.day),
+            "to_month": str(to_date.month),
+            "to_year": str(to_date.year),
+            "market_types_collection": [market_type],
+            "countries_collection": [search_request.country],
+            "file_type_collection": list(self.cfg.betfair_football.file_type),
+            "event_name": self.get_football_event_name(search_request),
+        }
+
         try:
             with RateLimitedContext():
                 # Request file list from API
-                file_list = self.client.historic.get_file_list(
-                    sport=self.cfg.betfair_football.sport,
-                    plan=self.cfg.betfair_football.plan,
-                    from_day=str(from_date.day),
-                    from_month=str(from_date.month),
-                    from_year=str(from_date.year),
-                    to_day=str(to_date.day),
-                    to_month=str(to_date.month),
-                    to_year=str(to_date.year),
-                    market_types_collection=[market_type],
-                    countries_collection=[search_request.country],
-                    file_type_collection=list(self.cfg.betfair_football.file_type),
-                    event_name=self.get_football_event_name(search_request),
-                )
+                file_list = self.client.historic.get_file_list(**api_params)
 
             # Log success and file count
             logger.info(
@@ -267,13 +271,15 @@ class ExtendDateTeamSearch(BaseSearchStrategy):
             )
 
         except betfairlightweight.exceptions.BetfairError as e:
-            error_msg = f"Failed to retrieve file list: {str(e)}"
+            # 3. Append the api_params to the error string so it saves to PostgreSQL!
+            error_msg = f"API Status: {str(e)} | Sent Params: {api_params}"
             logger.error(error_msg)
             raise ConnectionError(error_msg)
+
         except Exception as e:
-            error_msg = f"Unexpected error retrieving file list: {str(e)}"
+            error_msg = f"Unexpected error: {str(e)} | Sent Params: {api_params}"
             logger.error(error_msg)
-            raise RuntimeError(error_msg)  # type: ignore[override]  # type: ignore[override]
+            raise RuntimeError(error_msg)
 
     def search_over_config_markets(
         self, search_request: BetfairSearchRequest
