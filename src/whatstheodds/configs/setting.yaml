@@ -43,5 +43,5 @@ betfair_football:
             ]
 
 max_workers:
-  search: 5
+  search: 1
   download: 5
