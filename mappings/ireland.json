@@ -1,8 +1,8 @@
-TEAM_ALIASES = {
-    # Premier Division (2025)
+{
+
     "bohemian": "Bohemians",
     "cork-city": "Cork City",
-    "derry-city": "Derry",         # Betfair usually just calls them "Derry"
+    "derry-city": "Derry",
     "drogheda-united": "Drogheda",
     "galway-united": "Galway",    
     "shamrock-rovers": "Shamrock",
@@ -10,8 +10,6 @@ TEAM_ALIASES = {
     "sligo-rovers": "Sligo",    
     "st-patricks-athletic": "St Patricks",
     "waterford-fc": "Waterford",
-
-    # First Division (2025)
     "athlone-town": "Athlone Town",
     "bray-wanderers": "Bray Wanderers",
     "cobh-ramblers": "Cobh Ramblers",
@@ -20,6 +18,6 @@ TEAM_ALIASES = {
     "kerry-fc": "Kerry FC",
     "longford-town": "Longford",
     "treaty-united-fc": "Treaty United",
-    "university-college-dublin": "UCD", # A classic abbreviation mismatch!
+    "university-college-dublin": "UCD",
     "wexford-fc": "Wexford F.C"
 }
