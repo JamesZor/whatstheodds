@@ -1,15 +1,16 @@
 # scripts/ireland_test_grab.py
-import logging
+# import logging
 import sys
 
 from whatstheodds.pipeline.download_consumer import DownloadConsumer
 from whatstheodds.pipeline.search_producer import SearchProducer
 
 # Set up basic logging so you can see the terminal output clearly
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
-logger = logging.getLogger("IrelandGrabber")
+# logging.basicConfig(
+#     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+# )
+# # logger = logging.getLogger("IrelandGrabber")
+#
 
 
 def main():
