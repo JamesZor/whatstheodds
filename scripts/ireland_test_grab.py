@@ -26,15 +26,15 @@ def main():
     target_tournaments = [prem_tourn_id, div1_tourn_id]
     target_seasons = [prem_season_id, div1_season_id]
 
-    logger.info(
-        f"Initiating Betfair Extraction Pipeline for Tournaments: {target_tournaments}"
-    )
-
+    # logger.info(
+    #     f"Initiating Betfair Extraction Pipeline for Tournaments: {target_tournaments}"
+    # )
+    #
     # ==========================================
     # PHASE 1: THE SEARCH PRODUCER
     # Maps Sofascore matches to Betfair files
     # ==========================================
-    logger.info("=== Starting Phase 1: Search Producer ===")
+    # logger.info("=== Starting Phase 1: Search Producer ===")
     producer = SearchProducer()
 
     # Run the producer to fill up the betfair.markets queue
@@ -43,13 +43,13 @@ def main():
         season_filters=target_seasons,
         # limit_filter=10  # Optional: Un-comment to test a small batch first
     )
-    logger.info("Phase 1 Complete. Target matches have been successfully queued.")
+    # logger.info("Phase 1 Complete. Target matches have been successfully queued.")
 
     # ==========================================
     # PHASE 2: THE DOWNLOAD CONSUMER
     # Drains the queue, downloads, stitches, and extracts
     # ==========================================
-    logger.info("=== Starting Phase 2: Download Consumer ===")
+    # logger.info("=== Starting Phase 2: Download Consumer ===")
     # 5 workers is usually the sweet spot for the Betfair Historical API rate limit
     consumer = DownloadConsumer(batch_size=10, max_workers=5, show_rate_limit_bar=True)
 
@@ -59,14 +59,15 @@ def main():
     # Run until the queue is completely empty (continuous=False)
     consumer.run()
 
-    logger.info(
-        "Phase 2 Complete. All available Ireland odds have been saved to the database."
-    )
+    # logger.info(
+    #     "Phase 2 Complete. All available Ireland odds have been saved to the database."
+    # )
+    #
 
 
 if __name__ == "__main__":
     try:
         main()
     except KeyboardInterrupt:
-        logger.info("Script interrupted by user. Exiting safely.")
+        # logger.info("Script interrupted by user. Exiting safely.")
         sys.exit(0)
