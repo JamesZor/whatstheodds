@@ -155,54 +155,82 @@ class ExactDateTeamSearch(BaseSearchStrategy):
             "event_name": self.get_football_event_name(search_request),
         }
 
-        try:
-            # Request file list from API
-            with RateLimitedContext():
-                file_list = self.client.historic.get_file_list(**api_params)
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                with RateLimitedContext():
+                    file_list = self.client.historic.get_file_list(**api_params)
 
-            # Log success and file count
-            logger.info(
-                f"Successfully retrieved {len(file_list)} files for period, for market_type: {market_type} "
-            )
+                # --- 1. HANDLE MULTIPLE FILES ---
+                if len(file_list) > 1:
+                    return self._handle_multifiles(
+                        market_type, file_list, api_params, search_request
+                    )
 
-            if len(file_list) > 1:
-                return self._handle_multifiles(
-                    market_type, file_list, api_params, search_request
+                # --- 2. HANDLE EMPTY FILES ---
+                if not file_list:
+                    return self._handle_empty_filelist(
+                        market_type, file_list, api_params, search_request
+                    )
+
+                # --- 3. HANDLE SINGLE SUCCESS ---
+                return BetfairSearchSingleMarketResult.from_path_string(
+                    file=file_list[0],
+                    strategy_used_name=self.name,
+                    market_type=market_type,
                 )
 
-            if not file_list:
-                return self._handle_empty_filelist(
-                    market_type, file_list, api_params, search_request
-                )
+            except betfairlightweight.exceptions.BetfairError as e:
+                # --- 4. GRACEFULLY HANDLE 400 ERRORS (Locked Data) ---
+                if "400" in str(e):
+                    logger.warning(
+                        f"[{search_request.sofa_match_id}] API 400 Error for {market_type}. Data likely locked or unavailable."
+                    )
+                    return BetfairSearchSingleMarketResult(
+                        strategy_used=self.name,
+                        market_type=market_type,
+                        file=None,
+                        match_id=None,
+                        market_id=None,
+                        error=f"API 400 Error (Data locked). Params: {api_params}",
+                    )
 
-            return BetfairSearchSingleMarketResult.from_path_string(
-                file=file_list[0], strategy_used_name=self.name, market_type=market_type
-            )
+                # --- 5. RETRY ON SERVER ERRORS (502, 503, 504) ---
+                if "50" in str(e):
+                    if attempt < max_retries - 1:
+                        logger.warning(
+                            f"[{search_request.sofa_match_id}] Betfair 50x Server Error for {market_type}. Retrying in 2s... (Attempt {attempt+1}/{max_retries})"
+                        )
+                        time.sleep(2)
+                        continue  # Try the loop again!
 
-        except betfairlightweight.exceptions.BetfairError as e:
-            # --- 4. GRACEFULLY HANDLE 400 ERRORS (Locked Data) ---
-            if "400" in str(e):
-                logger.warning(
-                    f"[{search_request.sofa_match_id}] API 400 Error for {market_type}. Data likely locked or unavailable."
-                )
+                # If we run out of retries, DO NOT RAISE. Return a failed market result to save the rest of the match!
+                error_msg = f"API Status: {str(e)} | Sent Params: {api_params}"
+                logger.error(error_msg)
                 return BetfairSearchSingleMarketResult(
                     strategy_used=self.name,
                     market_type=market_type,
                     file=None,
                     match_id=None,
                     market_id=None,
-                    error=f"API 400 Error (Data locked). Params: {api_params}",
+                    error=error_msg,
                 )
 
-            # If it's a real crash (like a timeout), raise it
-            error_msg = f"API Status: {str(e)} | Sent Params: {api_params}"
-            logger.error(error_msg)
-            raise ConnectionError(error_msg)
+            except Exception as e:
+                if attempt < max_retries - 1:
+                    time.sleep(2)
+                    continue
 
-        except Exception as e:
-            error_msg = f"Unexpected error: {str(e)} | Sent Params: {api_params}"
-            logger.error(error_msg)
-            raise RuntimeError(error_msg)
+                error_msg = f"Unexpected error: {str(e)} | Sent Params: {api_params}"
+                logger.error(error_msg)
+                return BetfairSearchSingleMarketResult(
+                    strategy_used=self.name,
+                    market_type=market_type,
+                    file=None,
+                    match_id=None,
+                    market_id=None,
+                    error=error_msg,
+                )
 
     def search_over_config_markets(
         self, search_request: BetfairSearchRequest
@@ -303,50 +331,82 @@ class ExtendDateTeamSearch(BaseSearchStrategy):
             "event_name": self.get_football_event_name(search_request),
         }
 
-        try:
-            with RateLimitedContext():
-                # Request file list from API
-                file_list = self.client.historic.get_file_list(**api_params)
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                with RateLimitedContext():
+                    file_list = self.client.historic.get_file_list(**api_params)
 
-            # Log success and file count
-            logger.info(
-                f"Successfully retrieved {len(file_list)} files for period, for market_type: {market_type} "
-            )
+                # --- 1. HANDLE MULTIPLE FILES ---
+                if len(file_list) > 1:
+                    return self._handle_multifiles(
+                        market_type, file_list, api_params, search_request
+                    )
 
-            if len(file_list) > 1:
-                return self._handle_multifiles(
-                    market_type, file_list, api_params, search_request
+                # --- 2. HANDLE EMPTY FILES ---
+                if not file_list:
+                    return self._handle_empty_filelist(
+                        market_type, file_list, api_params, search_request
+                    )
+
+                # --- 3. HANDLE SINGLE SUCCESS ---
+                return BetfairSearchSingleMarketResult.from_path_string(
+                    file=file_list[0],
+                    strategy_used_name=self.name,
+                    market_type=market_type,
                 )
 
-            if not file_list:
-                return self._handle_empty_filelist(
-                    market_type, file_list, api_params, search_request
-                )
+            except betfairlightweight.exceptions.BetfairError as e:
+                # --- 4. GRACEFULLY HANDLE 400 ERRORS (Locked Data) ---
+                if "400" in str(e):
+                    logger.warning(
+                        f"[{search_request.sofa_match_id}] API 400 Error for {market_type}. Data likely locked or unavailable."
+                    )
+                    return BetfairSearchSingleMarketResult(
+                        strategy_used=self.name,
+                        market_type=market_type,
+                        file=None,
+                        match_id=None,
+                        market_id=None,
+                        error=f"API 400 Error (Data locked). Params: {api_params}",
+                    )
 
-        except betfairlightweight.exceptions.BetfairError as e:
-            # --- 4. GRACEFULLY HANDLE 400 ERRORS (Locked Data) ---
-            if "400" in str(e):
-                logger.warning(
-                    f"[{search_request.sofa_match_id}] API 400 Error for {market_type}. Data likely locked or unavailable."
-                )
+                # --- 5. RETRY ON SERVER ERRORS (502, 503, 504) ---
+                if "50" in str(e):
+                    if attempt < max_retries - 1:
+                        logger.warning(
+                            f"[{search_request.sofa_match_id}] Betfair 50x Server Error for {market_type}. Retrying in 2s... (Attempt {attempt+1}/{max_retries})"
+                        )
+                        time.sleep(2)
+                        continue  # Try the loop again!
+
+                # If we run out of retries, DO NOT RAISE. Return a failed market result to save the rest of the match!
+                error_msg = f"API Status: {str(e)} | Sent Params: {api_params}"
+                logger.error(error_msg)
                 return BetfairSearchSingleMarketResult(
                     strategy_used=self.name,
                     market_type=market_type,
                     file=None,
                     match_id=None,
                     market_id=None,
-                    error=f"API 400 Error (Data locked). Params: {api_params}",
+                    error=error_msg,
                 )
 
-            # If it's a real crash (like a timeout), raise it
-            error_msg = f"API Status: {str(e)} | Sent Params: {api_params}"
-            logger.error(error_msg)
-            raise ConnectionError(error_msg)
+            except Exception as e:
+                if attempt < max_retries - 1:
+                    time.sleep(2)
+                    continue
 
-        except Exception as e:
-            error_msg = f"Unexpected error: {str(e)} | Sent Params: {api_params}"
-            logger.error(error_msg)
-            raise RuntimeError(error_msg)
+                error_msg = f"Unexpected error: {str(e)} | Sent Params: {api_params}"
+                logger.error(error_msg)
+                return BetfairSearchSingleMarketResult(
+                    strategy_used=self.name,
+                    market_type=market_type,
+                    file=None,
+                    match_id=None,
+                    market_id=None,
+                    error=error_msg,
+                )
 
     def search_over_config_markets(
         self, search_request: BetfairSearchRequest
