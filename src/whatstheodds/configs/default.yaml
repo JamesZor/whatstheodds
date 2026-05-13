@@ -1,3 +1,5 @@
+# src/whatstheodds/configs/default.yaml
+
 betfair_client:
   env_file: ".env"
   required_credentials: ["USER_NAME", "PASSWORD", "APP_KEY"]
