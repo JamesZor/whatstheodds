@@ -45,7 +45,7 @@ class SearchProducer:
     def __init__(self):
         self.config = load_config()
         self.db = DatabaseManager(self.config)
-        self.search_engine = BetfairSearchEngine(cfg=self.config)
+        self.search_engine = BetfairSearchEngine()
         self.mapper = MatchMapper()
 
     def _succes_process_match(
