@@ -56,7 +56,7 @@ def main():
     consumer.retry_failed_markets(max_retries=3)
 
     # Run until the queue is completely empty (continuous=False)
-    consumer.run(continuous=False)
+    consumer.run()
 
     logger.info(
         "Phase 2 Complete. All available Ireland odds have been saved to the database."

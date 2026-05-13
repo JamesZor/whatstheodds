@@ -570,7 +570,7 @@ class TeamNameAutoMapper:
             f"Initiating Season Discovery for {country_code} ({year}, Months {start_month}-{end_month})..."
         )
 
-        self.api_client.login()
+        # self.api_client.login()
         betfair_teams = set()
 
         # Iterate through the months of the season
