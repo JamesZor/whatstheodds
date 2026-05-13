@@ -36,10 +36,12 @@ betfair_football:
       "OVER_UNDER_15",
       "OVER_UNDER_25",
       "OVER_UNDER_35",
+      "OVER_UNDER_45",
+      "OVER_UNDER_55",
       "CORRECT_SCORE", 
       "BOTH_TEAMS_TO_SCORE",
             ]
 
 max_workers:
-  search: 2
+  search: 5
   download: 5

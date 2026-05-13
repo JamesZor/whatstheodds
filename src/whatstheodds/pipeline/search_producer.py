@@ -15,6 +15,7 @@ from whatstheodds.mappers.match_mapper import MatchMapper
 
 logger = logging.getLogger(__name__)
 
+# ISO 3166-1 alpha-2
 COUNTRY_MAP = {
     "England": "GB",
     "Scotland": "GB",
@@ -34,7 +35,9 @@ COUNTRY_MAP = {
     "Australia": "AU",
     "Turkey": "TR",
     "Greece": "GR",
-    # Add any others you scrape!
+    "Ireland": "IE",
+    "Norway": "NO",
+    "Japan": "JP",
 }
 
 
