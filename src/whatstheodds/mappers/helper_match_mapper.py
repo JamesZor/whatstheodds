@@ -1,3 +1,6 @@
+# src/whatstheodds/mapper/helper_match_mapper.py
+
+
 import logging
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -511,3 +514,125 @@ class HelperMapper:
 
         logger.warning(f"Could not extract match_id from folder: {folder_path}")
         return None
+
+
+# 0000
+
+import difflib
+import logging
+from datetime import datetime, timedelta
+
+from sqlalchemy import text
+
+from whatstheodds.betfair.api_client import setup_betfair_api_client
+from whatstheodds.configs.config import load_config
+from whatstheodds.db.manager import DatabaseManager
+
+logging.basicConfig(level=logging.INFO, format="%(message)s")
+logger = logging.getLogger("AutoMapper")
+
+
+class TeamNameAutoMapper:
+    def __init__(self):
+        self.config = load_config()
+        self.db = DatabaseManager(self.config)
+        self.api_client = setup_betfair_api_client()
+
+    def get_sofascore_slugs(self, tournament_ids: list) -> set:
+        """Grabs all unique team slugs from your database for specific leagues."""
+        logger.info(f"Fetching Sofascore teams for tournaments {tournament_ids}...")
+
+        query = text("""
+            SELECT DISTINCT home_team FROM public.events WHERE tournament_id = ANY(:t_ids)
+            UNION
+            SELECT DISTINCT away_team FROM public.events WHERE tournament_id = ANY(:t_ids)
+        """)
+
+        with self.db.SessionLocal() as session:
+            result = session.execute(query, {"t_ids": tournament_ids}).fetchall()
+
+        slugs = {row[0] for row in result if row[0]}
+        logger.info(f"Found {len(slugs)} unique Sofascore teams.")
+        return slugs
+
+    def get_betfair_teams(self, country_code: str) -> set:
+        """Queries Betfair for a 6-month window to extract all active team names."""
+        logger.info(f"Fetching Betfair events for country '{country_code}'...")
+
+        # Look 3 months back and 3 months forward
+        now = datetime.utcnow()
+
+        # Ask the Historical API (or Live API) for event names.
+        # Using Historical get_file_list is a clever hack to get event names!
+        # Use the Live Betting API to list all scheduled football matches in the country
+        try:
+            market_catalogue = self.api_client.betting.list_events(
+                filter={
+                    "eventTypeIds": ["1"],  # 1 = Soccer
+                    "marketCountries": [country_code],
+                }
+            )
+        except Exception as e:
+            logger.error(f"Failed to fetch from Live API: {e}")
+            return set()
+
+        betfair_teams = set()
+        for event_result in market_catalogue:
+            event_name = event_result.event.name
+            if " v " in event_name:
+                home, away = event_name.split(" v ")
+                betfair_teams.add(home.strip())
+                betfair_teams.add(away.strip())
+
+        logger.info(
+            f"Found {len(betfair_teams)} unique Betfair teams currently active."
+        )
+        return betfair_teams
+
+    def generate_mapping(self, sofascore_slugs: set, betfair_teams: set):
+        """Uses fuzzy matching to pair them up and prints a Python dictionary."""
+        logger.info("\n--- GENERATED MAPPING DICTIONARY ---")
+        print("TEAM_ALIASES = {")
+
+        unmatched = []
+        betfair_list = list(betfair_teams)
+
+        for slug in sorted(sofascore_slugs):
+            # Clean up the slug to make matching easier (e.g., 'st-patricks-athletic' -> 'st patricks athletic')
+            clean_slug = slug.replace("-", " ").title()
+
+            # Find the closest match from Betfair
+            matches = difflib.get_close_matches(
+                clean_slug, betfair_list, n=1, cutoff=0.6
+            )
+
+            if matches:
+                matched_team = matches[0]
+                print(f'    "{slug}": "{matched_team}",')
+                # Remove it from the list so it doesn't get matched twice
+                betfair_list.remove(matched_team)
+            else:
+                unmatched.append(slug)
+
+        print("}")
+
+        if unmatched:
+            logger.warning(
+                f"\nCould not find obvious matches for these {len(unmatched)} teams (You must do these manually):"
+            )
+            for u in unmatched:
+                print(f'    "{u}": "???",')
+
+
+if __name__ == "__main__":
+    # 79 = Ireland Premier, 718 = Division 1
+    target_tournaments = [79, 718]
+    country_iso = "IE"
+
+    mapper = TeamNameAutoMapper()
+    db_teams = mapper.get_sofascore_slugs(target_tournaments)
+
+    if db_teams:
+        bf_teams = mapper.get_betfair_teams(country_iso)
+        if bf_teams:
+            mapper.generate_mapping(db_teams, bf_teams)
