@@ -555,37 +555,72 @@ class TeamNameAutoMapper:
         logger.info(f"Found {len(slugs)} unique Sofascore teams.")
         return slugs
 
-    def get_betfair_teams(self, country_code: str) -> set:
-        """Queries Betfair for a 6-month window to extract all active team names."""
-        logger.info(f"Fetching Betfair events for country '{country_code}'...")
+    def get_betfair_teams(
+        self,
+        country_code: str,
+        start_month: int = 2,
+        end_month: int = 11,
+        year: int = 2025,
+    ) -> set:
+        """
+        Iterates through the Betfair Historical archive month-by-month to
+        discover every team name used in that country for a full season.
+        """
+        logger.info(
+            f"Initiating Season Discovery for {country_code} ({year}, Months {start_month}-{end_month})..."
+        )
 
-        # Look 3 months back and 3 months forward
-        now = datetime.utcnow()
-
-        # Ask the Historical API (or Live API) for event names.
-        # Using Historical get_file_list is a clever hack to get event names!
-        # Use the Live Betting API to list all scheduled football matches in the country
-        try:
-            market_catalogue = self.api_client.betting.list_events(
-                filter={
-                    "eventTypeIds": ["1"],  # 1 = Soccer
-                    "marketCountries": [country_code],
-                }
-            )
-        except Exception as e:
-            logger.error(f"Failed to fetch from Live API: {e}")
-            return set()
-
+        self.api_client.login()
         betfair_teams = set()
-        for event_result in market_catalogue:
-            event_name = event_result.event.name
-            if " v " in event_name:
-                home, away = event_name.split(" v ")
-                betfair_teams.add(home.strip())
-                betfair_teams.add(away.strip())
+
+        # Iterate through the months of the season
+        for month in range(start_month, end_month + 1):
+            logger.info(f"Checking {year}-{month:02d}...")
+
+            # We check the first 28 days of the month to be safe
+            api_params = {
+                "sport": "Soccer",
+                "plan": "Basic Plan",
+                "from_day": "1",
+                "from_month": str(month),
+                "from_year": str(year),
+                "to_day": "28",
+                "to_month": str(month),
+                "to_year": str(year),
+                "market_types_collection": ["MATCH_ODDS"],
+                "countries_collection": [country_code],
+                "file_type_collection": ["M"],
+            }
+
+            try:
+                # get_file_list returns paths like: /BASIC/2025/Feb/14/ID/Home v Away/1.XXX.bz2
+                file_list = self.api_client.historic.get_file_list(**api_params)
+
+                for path in file_list:
+                    # Logic to extract 'Home v Away' from the path
+                    # Standard Betfair path: .../EventID/HumanReadableName/MarketID.bz2
+                    parts = path.split("/")
+
+                    # Usually, the event name is the second to last or third to last element
+                    # We look for the part containing ' v '
+                    event_name = next((p for p in parts if " v " in p), None)
+
+                    if event_name:
+                        home, away = event_name.split(" v ")
+                        betfair_teams.add(home.strip())
+                        betfair_teams.add(away.strip())
+
+            except Exception as e:
+                # If a month isn't 'purchased' yet, it will throw a 400. We just skip it.
+                if "400" in str(e):
+                    logger.warning(
+                        f"Month {month} is not available/purchased in your account. Skipping."
+                    )
+                else:
+                    logger.error(f"Error checking month {month}: {e}")
 
         logger.info(
-            f"Found {len(betfair_teams)} unique Betfair teams currently active."
+            f"Season Discovery Complete. Found {len(betfair_teams)} unique Betfair teams."
         )
         return betfair_teams
 
@@ -631,8 +666,11 @@ if __name__ == "__main__":
 
     mapper = TeamNameAutoMapper()
     db_teams = mapper.get_sofascore_slugs(target_tournaments)
+    bf_teams = mapper.get_betfair_teams(
+        country_iso, start_month=2, end_month=11, year=2025
+    )
 
-    if db_teams:
-        bf_teams = mapper.get_betfair_teams(country_iso)
-        if bf_teams:
-            mapper.generate_mapping(db_teams, bf_teams)
+    # if db_teams:
+    #     bf_teams = mapper.get_betfair_teams(country_iso)
+    #     if bf_teams:
+    #         mapper.generate_mapping(db_teams, bf_teams)
