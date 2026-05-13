@@ -41,7 +41,7 @@ class ProcessorFactory:
         self._processors["BOTH_TEAMS_TO_SCORE"] = BothTeamsToScoreProcessor(self.cfg)
 
         # Over/Under processors for different goal lines
-        goal_lines = ["0.5", "1.5", "2.5", "3.5", "4.5"]
+        goal_lines = ["0.5", "1.5", "2.5", "3.5", "4.5", "5.5"]
         for goal_line in goal_lines:
             # Full time
             market_key = f"OVER_UNDER_{goal_line.replace('.', '')}"
