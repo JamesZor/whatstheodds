@@ -48,6 +48,7 @@ class DatabaseManager:
             LEFT JOIN betfair.match_meta m ON e.match_id = m.match_id
             WHERE m.match_id IS NULL
             and e.status_type = 'finished'
+            AND start_timestamp >= 1451606400
         """
 
         params: dict[str, Any] = {}

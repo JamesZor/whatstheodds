@@ -122,38 +122,55 @@ class DownloadConsumer:
             if not processor:
                 raise ValueError(f"No configured processor for {market_type}")
 
-            mock_result = BetfairSearchSingleMarketResult(
-                strategy_used="QUEUE_DOWNLOAD",
-                market_type=market_type,
-                file=file_path,
-                match_id=str(match_id),
-                market_id=market_id,
-            )
+            raw_file_data = (
+                []
+            )  # We define this OUTSIDE the loop so all files append to it
+
+            # --- THE STITCHING LOOP ---
+            # Split the paths by comma (if there is only 1 file, it just loops once)
+            paths_to_download = file_path.split(",")
 
             with tempfile.TemporaryDirectory() as tmp_dir:
                 save_dir = Path(tmp_dir)
-                downloaded_file = self.downloader._download_with_retries(
-                    search_result=mock_result, save_folder=save_dir, retry_on_html=True
-                )
 
-                if not downloaded_file or not downloaded_file.exists():
-                    raise FileNotFoundError("API failed to return valid file")
+                for single_path in paths_to_download:
+                    mock_result = BetfairSearchSingleMarketResult(
+                        strategy_used="QUEUE_DOWNLOAD",
+                        market_type=market_type,
+                        file=single_path,  # Pass the individual path
+                        match_id=str(match_id),
+                        market_id=market_id,
+                    )
 
-                raw_file_data = []
-                with bz2.BZ2File(downloaded_file, "rb") as f:
-                    for line in f:
-                        if line:
-                            raw_file_data.append(json.loads(line))
+                    downloaded_file = self.downloader._download_with_retries(
+                        search_result=mock_result,
+                        save_folder=save_dir,
+                        retry_on_html=True,
+                    )
 
-                clean_odds_dict = processor.process(raw_file_data)
+                    if not downloaded_file or not downloaded_file.exists():
+                        raise FileNotFoundError(
+                            f"API failed to return file: {single_path}"
+                        )
 
-                ticks_to_insert.append(
-                    {
-                        "match_id": match_id,
-                        "market_id": str(market_id),
-                        "odds_data": clean_odds_dict,
-                    }
-                )
+                    # Open the file and append the ticks to our master list
+                    with bz2.BZ2File(downloaded_file, "rb") as f:
+                        for line in f:
+                            if line:
+                                raw_file_data.append(json.loads(line))
+
+            # --- LOOP ENDS ---
+
+            # Now we pass the FULL, stitched match history to your Extractor!
+            clean_odds_dict = processor.process(raw_file_data)
+
+            ticks_to_insert.append(
+                {
+                    "match_id": match_id,
+                    "market_id": str(market_id),
+                    "odds_data": clean_odds_dict,
+                }
+            )
 
             return {
                 "market_id": market_id,
@@ -254,10 +271,10 @@ class DownloadConsumer:
 
 
 if __name__ == "__main__":
-    consumer = DownloadConsumer(batch_size=10, max_workers=5)
+    consumer = DownloadConsumer(batch_size=10, max_workers=2)
 
     # Retry any old failures first
-    consumer.retry_failed_markets(max_retries=3)
+    # consumer.retry_failed_markets(max_retries=3)
 
     # Drain the queue
     consumer.run()

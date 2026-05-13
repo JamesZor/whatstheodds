@@ -48,21 +48,42 @@ class SearchProducer:
     def _succes_process_match(
         self, match_id: int, result: BetfairSearchResult, start_time: datetime
     ):
+        # 1. Get the strategy used
         strategy = (
             list(result.valid_markets.values())[0].strategy_used
             if result.valid_markets
             else "unknown"
         )
 
+        # 2. Extract the REAL Betfair Event ID from the first valid file path!
+        # Path looks like: /.../27678990/1.122899388.bz2
+        real_betfair_id = None
+        first_valid = list(result.valid_markets.values())[0]
+        if first_valid.file:
+            # Split by comma in case it's a stitched multi-file, then grab the ID directory
+            first_path = first_valid.file.split(",")[0]
+            real_betfair_id = first_path.split("/")[-2]
+
+        # 3. Compile an error log if SOME markets were found, but others were missing
+        partial_errors = None
+        if result.missing_markets:
+            missing_names = list(result.missing_markets.keys())
+            partial_errors = f"Partial Success. Missing markets: {missing_names}"
+
+        # 4. Upsert with total transparency
         self.db.upsert_betfair_meta(
             match_id=match_id,
-            betfair_id=str(result.match_id),
+            betfair_id=real_betfair_id,  # <--- Now passing the REAL ID
             name=f"{result.home} v {result.away}",
             strategy=strategy,
             kickoff_time=start_time,
-            status="SUCCESS",
+            status=(
+                "SUCCESS" if not partial_errors else "PARTIAL_SUCCESS"
+            ),  # <--- New Status!
+            error_log=partial_errors,  # <--- Logs the missing markets!
         )
 
+        # 5. Queue only the valid markets for the DownloadConsumer
         markets_to_queue = [
             (str(m.market_id), m.market_type, m.file)
             for m in result.valid_markets.values()
@@ -72,20 +93,33 @@ class SearchProducer:
     def _fail_process_match(
         self, match_id: int, request: BetfairSearchRequest, result: BetfairSearchResult
     ):
+        # 1. Safely extract the strategy used
         strategy = (
-            list(result.missing_markets.values())[0].strategy_used + "_FAILED"
+            list(result.missing_markets.values())[0].strategy_used
             if result.missing_markets
             else "FAILED_UNKNOWN"
         )
 
+        # 2. Extract the specific error containing the api_params!
+        error_msg = None
+
+        # Check if there is a global error first (e.g., the whole API crashed)
+        if hasattr(result, "error") and result.error:
+            error_msg = result.error
+        # Otherwise, grab the detailed API params error from the first missing market
+        elif result.missing_markets:
+            first_missing = list(result.missing_markets.values())[0]
+            error_msg = first_missing.error
+
+        # 3. Log it to the database
         self.db.upsert_betfair_meta(
             match_id=match_id,
             betfair_id=None,
             name=f"{request.home} v {request.away}",
             strategy=strategy,
             kickoff_time=request.date,
-            status="NOT_FOUND",  # It didn't crash, it just isn't there
-            error_log="Match not found in Betfair historical data",
+            status="NOT_FOUND",
+            error_log=error_msg,
         )
 
     def process_match(self, match_data):
@@ -125,12 +159,10 @@ class SearchProducer:
             # 3. Search Betfair
             result = self.search_engine.search_main(request)
 
-            if result.match_id:
+            if result and result.valid_markets:
                 self._succes_process_match(match_id, result, kickoff_dt)
-                return f"SUCCESS: {home} v {away}"
             else:
                 self._fail_process_match(match_id, request, result)
-                return f"NOT FOUND: {home} v {away}"
 
         except Exception as e:
             logger.error(f"Failed to process match {match_id}: {e}")
@@ -172,9 +204,9 @@ class SearchProducer:
 if __name__ == "__main__":
     # You can now specify how many threads to run (e.g., 5 to 10 is usually safe for search)
     producer = SearchProducer()
-    producer.run(tournament_filters=[54], limit_filter=5)
+    producer.run(tournament_filters=[54], limit_filter=20)
 
     # TODO: 2026-05-11
     # Progress bar for the search overall,  Progress bar for the search overall,
     # More than one file found --- how to deal with that print, / does this cause us an issue
-5587372
+# 5587372

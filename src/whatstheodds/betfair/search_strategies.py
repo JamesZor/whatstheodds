@@ -51,6 +51,76 @@ class BaseSearchStrategy(ABC):
     ) -> List[BetfairSearchSingleMarketResult]:
         pass
 
+    def _handle_multifiles(
+        self,
+        market_type: str,
+        file_list: list[str],
+        api_params: dict[str, Any],
+        search_request: BetfairSearchRequest,
+    ) -> BetfairSearchSingleMarketResult:
+
+        event_ids = set([f.split("/")[-2] for f in file_list])
+
+        if len(event_ids) == 1:
+            file_list.sort()
+            combined_paths = ",".join(file_list)
+
+            raw_filename = file_list[0].split("/")[-1].replace(".bz2", "")
+            first_market_id = raw_filename.split(".")[-1]
+
+            logger.info(
+                f"[{search_request.sofa_match_id}] Split file detected. Stitching {len(file_list)} files."
+            )
+
+            return BetfairSearchSingleMarketResult(
+                strategy_used=self.name,
+                market_type=market_type,
+                file=combined_paths,
+                match_id=str(search_request.sofa_match_id),
+                market_id=first_market_id,
+            )
+        else:
+            # ---> YOU WERE MISSING THIS BLOCK! <---
+            logger.warning(
+                f"\n[MATCH {search_request.sofa_match_id}] MULTIPLE EVENTS for {market_type}.\n"
+                f"Sent Event Name: '{api_params['event_name']}'\n"
+                f"Files Returned: {file_list}\n"
+            )
+            return BetfairSearchSingleMarketResult(
+                strategy_used=self.name,
+                market_type=market_type,
+                file=None,
+                match_id=None,
+                market_id=None,
+                error=f"Multiple distinct events found: {event_ids}",
+            )
+
+    def _handle_empty_filelist(
+        self,
+        market_type: str,
+        file_list: list[str],
+        api_params: dict[str, Any],
+        search_request: BetfairSearchRequest,
+    ) -> BetfairSearchSingleMarketResult:
+        """
+        Helper to process the failed results, no file list
+        """
+
+        # DEBUG: Print the event name and date range we sent that resulted in a total miss
+        logger.warning(
+            f"\n[MATCH {search_request.sofa_match_id}] NO FILES for {market_type}.\n"
+            f"Sent Event Name: '{api_params['event_name']}'\n"
+            f"Date Range: {api_params['from_year']}-{api_params['from_month']}-{api_params['from_day']} to {api_params['to_day']}\n"
+        )
+        return BetfairSearchSingleMarketResult(
+            strategy_used=self.name,
+            market_type=market_type,
+            file=None,
+            match_id=None,
+            market_id=None,
+            error=f"[MATCH {search_request.sofa_match_id}] NO FILES for {market_type} : api_params={api_params}",
+        )
+
 
 class ExactDateTeamSearch(BaseSearchStrategy):
     def __init__(self, cfg: DictConfig, client: betfairlightweight.APIClient):
@@ -96,34 +166,35 @@ class ExactDateTeamSearch(BaseSearchStrategy):
             )
 
             if len(file_list) > 1:
-                logger.warning(
-                    f"More than one file found for {search_request.sofa_match_id}."
-                )
-                return BetfairSearchSingleMarketResult(
-                    strategy_used=self.name,
-                    market_type=market_type,
-                    file=None,
-                    match_id=None,
-                    market_id=None,
-                    error="More than one file.",
+                return self._handle_multifiles(
+                    market_type, file_list, api_params, search_request
                 )
 
             if not file_list:
-                logger.warning(f"No file found for {search_request.sofa_match_id}.")
-                return BetfairSearchSingleMarketResult(
-                    strategy_used=self.name,
-                    market_type=market_type,
-                    file=None,
-                    match_id=None,
-                    market_id=None,
-                    error="No files found.",
+                return self._handle_empty_filelist(
+                    market_type, file_list, api_params, search_request
                 )
 
             return BetfairSearchSingleMarketResult.from_path_string(
                 file=file_list[0], strategy_used_name=self.name, market_type=market_type
             )
+
         except betfairlightweight.exceptions.BetfairError as e:
-            # 3. Append the api_params to the error string so it saves to PostgreSQL!
+            # --- 4. GRACEFULLY HANDLE 400 ERRORS (Locked Data) ---
+            if "400" in str(e):
+                logger.warning(
+                    f"[{search_request.sofa_match_id}] API 400 Error for {market_type}. Data likely locked or unavailable."
+                )
+                return BetfairSearchSingleMarketResult(
+                    strategy_used=self.name,
+                    market_type=market_type,
+                    file=None,
+                    match_id=None,
+                    market_id=None,
+                    error=f"API 400 Error (Data locked). Params: {api_params}",
+                )
+
+            # If it's a real crash (like a timeout), raise it
             error_msg = f"API Status: {str(e)} | Sent Params: {api_params}"
             logger.error(error_msg)
             raise ConnectionError(error_msg)
@@ -243,35 +314,31 @@ class ExtendDateTeamSearch(BaseSearchStrategy):
             )
 
             if len(file_list) > 1:
-                logger.warning(
-                    f"More than one file found for {search_request.sofa_match_id}."
-                )
-                return BetfairSearchSingleMarketResult(
-                    strategy_used=self.name,
-                    market_type=market_type,
-                    file=None,
-                    match_id=None,
-                    market_id=None,
-                    error="More than one file.",
+                return self._handle_multifiles(
+                    market_type, file_list, api_params, search_request
                 )
 
             if not file_list:
-                logger.warning(f"No file found for {search_request.sofa_match_id}.")
+                return self._handle_empty_filelist(
+                    market_type, file_list, api_params, search_request
+                )
+
+        except betfairlightweight.exceptions.BetfairError as e:
+            # --- 4. GRACEFULLY HANDLE 400 ERRORS (Locked Data) ---
+            if "400" in str(e):
+                logger.warning(
+                    f"[{search_request.sofa_match_id}] API 400 Error for {market_type}. Data likely locked or unavailable."
+                )
                 return BetfairSearchSingleMarketResult(
                     strategy_used=self.name,
                     market_type=market_type,
                     file=None,
                     match_id=None,
                     market_id=None,
-                    error="No files found.",
+                    error=f"API 400 Error (Data locked). Params: {api_params}",
                 )
 
-            return BetfairSearchSingleMarketResult.from_path_string(
-                file=file_list[0], strategy_used_name=self.name, market_type=market_type
-            )
-
-        except betfairlightweight.exceptions.BetfairError as e:
-            # 3. Append the api_params to the error string so it saves to PostgreSQL!
+            # If it's a real crash (like a timeout), raise it
             error_msg = f"API Status: {str(e)} | Sent Params: {api_params}"
             logger.error(error_msg)
             raise ConnectionError(error_msg)
