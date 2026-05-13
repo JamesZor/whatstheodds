@@ -39,7 +39,7 @@ class BetfairSearchEngine:
         cfg: Optional[DictConfig] = None,
     ):
 
-        self.cfg: DictConfig = load_config() if cfg is None else cfg  # type: ignore[assignment]
+        self.cfg = cfg
 
         self.client: betfairlightweight.APIClient = (
             setup_betfair_api_client() if api_client is None else api_client
@@ -48,9 +48,15 @@ class BetfairSearchEngine:
         # Init strategy attributes
         self.search_strategy: BaseSearchStrategy
         self.extended_search_strategy: Optional[BaseSearchStrategy] = None
+        self.strategies = [
+            ExactDateTeamSearch(cfg=self.cfg, client=self.api_client),
+            ExtendDateTeamSearch(cfg=self.cfg, client=self.api_client),
+        ]
 
         # Set up strategies from config
-        self.set_search_strategies()
+        # self.set_search_strategies()
+
+        # self.set_search_strategies()
 
     def set_search_strategies(self) -> None:
         """
